@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "202650214430",
+    "project_id": "rallyfotografico-b9f0d",
+    "storage_bucket": "rallyfotografico-b9f0d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:202650214430:android:72b86f8db505461d428e0f",
+        "android_client_info": {
+          "package_name": "com.example.rally_fotografico"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBCMpXjCJtDmOOjWvd1hTRdk7ZVnjHOb6k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
