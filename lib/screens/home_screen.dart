@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/user_service.dart';
 import 'extra_info_flow.dart';
+import 'profile_tab.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -121,46 +122,24 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       // Pantalla de perfil
-      Center(
-        child: Card(
-          elevation: 8,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          margin: const EdgeInsets.all(32),
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.person, size: 64, color: Colors.deepPurple),
-                const SizedBox(height: 16),
-                Text(
-                  user?.email ?? 'Perfil',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.deepPurple),
-                ),
-                const SizedBox(height: 12),
-                ElevatedButton.icon(
-                  icon: Icon(Icons.logout, color: Colors.white),
-                  label: Text('Cerrar sesión', style: TextStyle(color: Colors.white)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: () async {
-                    await FirebaseAuth.instance.signOut();
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+      const ProfileTab(),
     ];
     if (_checking) {
       return Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     return Scaffold(
       backgroundColor: Colors.deepPurple.shade50,
-      body: screens[_selectedIndex],
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              'lib/assets/Background.png',
+              fit: BoxFit.cover,
+            ),
+          ),
+          screens[_selectedIndex],
+        ],
+      ),
       bottomNavigationBar: BottomNavigationBar(
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
@@ -169,49 +148,6 @@ class _HomeScreenState extends State<HomeScreen> {
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.deepPurple,
         onTap: _onItemTapped,
-      ),
-    );
-  }
-}
-
-class PerfilScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    return Scaffold(
-      backgroundColor: Colors.deepPurple.shade50,
-      body: Center(
-        child: Card(
-          elevation: 8,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          margin: const EdgeInsets.all(32),
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.person, size: 64, color: Colors.deepPurple),
-                const SizedBox(height: 16),
-                Text(
-                  user?.email ?? 'Perfil',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.deepPurple),
-                ),
-                const SizedBox(height: 12),
-                ElevatedButton.icon(
-                  icon: Icon(Icons.logout, color: Colors.white),
-                  label: Text('Cerrar sesión', style: TextStyle(color: Colors.white)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: () async {
-                    await FirebaseAuth.instance.signOut();
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

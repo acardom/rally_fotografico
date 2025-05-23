@@ -39,6 +39,7 @@ class UserService {
     required String username,
     required DateTime fechaNacimiento,
     required bool esAdmin,
+    required bool areBaned,
     String? foto,
   }) async {
     await _db.collection('usuarios').doc(email).set({
@@ -48,6 +49,7 @@ class UserService {
       'username': username,
       'fechaNacimiento': fechaNacimiento,
       'esAdmin': esAdmin,
+      'areBaned': areBaned,
       'foto': foto ?? '',
     });
   }
@@ -78,5 +80,20 @@ class UserService {
       data['username'].toString().isEmpty) ||
       (data['fechaNacimiento'] == null) ||
       (data['esAdmin'] == null);
+      (data['areBaned'] == null);
+  }
+
+  /**
+   * Verifica si un username ya está en uso en la base de datos.
+   * @param username El nombre de usuario a comprobar.
+   * @return true si el username existe, false en caso contrario.
+   */
+  // Comentario: usernameExists comprueba si existe un usuario por nombre de usuario.
+  static Future<bool> usernameExists(String username) async {
+    final query = await _db.collection('usuarios')
+      .where('username', isEqualTo: username)
+      .limit(1)
+      .get();
+    return query.docs.isNotEmpty;
   }
 }

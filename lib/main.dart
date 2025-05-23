@@ -9,7 +9,10 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/home_screen_admin.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'services/user_service.dart';
+import 'screens/blocked_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,6 +32,9 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(primarySwatch: Colors.deepPurple),
       home: AuthGate(),
       debugShowCheckedModeBanner: false,
+      routes: {
+        '/homeAdmin': (_) => HomeScreenAdmin(),
+      },
     );
   }
 }
@@ -38,20 +44,51 @@ class MyApp extends StatelessWidget {
  * según el estado de autenticación del usuario.
  */
 class AuthGate extends StatelessWidget {
+  Future<Map<String, dynamic>?> _getUserData(User user) async {
+    return await UserService.getUserData(user.email ?? '');
+  }
+
+  Future<bool> _isAdmin(Map<String, dynamic>? userData) async {
+    return userData != null && userData['esAdmin'] == true;
+  }
+
+  Future<bool> _isBanned(Map<String, dynamic>? userData) async {
+    return userData != null && userData['areBaned'] == true;
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        // Mientras se determina el estado de conexión, se muestra un indicador de carga.
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
-        // Si el usuario está autenticado, se muestra la pantalla principal.
-        if (snapshot.hasData) {
-          return HomeScreen();
+        final user = snapshot.data;
+        if (user != null) {
+          return FutureBuilder<Map<String, dynamic>?>(
+            future: _getUserData(user),
+            builder: (context, userSnapshot) {
+              if (userSnapshot.connectionState == ConnectionState.waiting) {
+                return const Scaffold(body: Center(child: CircularProgressIndicator()));
+              }
+              if (userSnapshot.hasError) {
+                return Scaffold(body: Center(child: Text('Error al cargar usuario')));
+              }
+              final userData = userSnapshot.data;
+              // Si está bloqueado, muestra la pantalla de bloqueado
+              if (userData != null && userData['areBaned'] == true) {
+                return const BlockedScreen();
+              }
+              // Si es admin, HomeScreenAdmin. Si no, HomeScreen (aunque no exista el campo)
+              if (userData != null && userData['esAdmin'] == true) {
+                return HomeScreenAdmin();
+              } else {
+                return HomeScreen();
+              }
+            },
+          );
         }
-        // Si no hay datos de usuario, se muestra la pantalla de inicio de sesión.
         return LoginScreen();
       },
     );

@@ -23,7 +23,9 @@ class _ExtraInfoFlowState extends State<ExtraInfoFlow> {
   final _nombreController = TextEditingController();
   DateTime? _fechaNacimiento;
   bool _esAdmin = false;
+  bool _areBaned = false;
   int _step = 0;
+  String? _usernameError;
 
   @override
   void initState() {
@@ -34,7 +36,27 @@ class _ExtraInfoFlowState extends State<ExtraInfoFlow> {
   }
 
   /// Avanza al siguiente paso del flujo
-  void _nextStep() {
+  Future<void> _nextStep() async {
+    if (_step == 1) {
+      // Validar username antes de pasar al siguiente paso
+      final username = _usernameController.text.trim();
+      if (username.isEmpty) {
+        setState(() {
+          _usernameError = 'El nombre de usuario es obligatorio.';
+        });
+        return;
+      }
+      final exists = await UserService.usernameExists(username);
+      if (exists) {
+        setState(() {
+          _usernameError = 'El nombre de usuario ya está en uso. Elige otro.';
+        });
+        return;
+      }
+      setState(() {
+        _usernameError = null;
+      });
+    }
     setState(() {
       _step++;
     });
@@ -49,6 +71,16 @@ class _ExtraInfoFlowState extends State<ExtraInfoFlow> {
 
   /// Guarda la información del usuario y finaliza el flujo
   Future<void> _saveAndFinish() async {
+    // Comprobar si el username ya existe en Firestore
+    final exists = await UserService.usernameExists(_usernameController.text);
+    if (exists) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('El nombre de usuario ya está en uso. Elige otro.')),
+        );
+      }
+      return;
+    }
     await UserService.saveUserData(
       uid: widget.user.uid,
       email: widget.user.email ?? '',
@@ -56,6 +88,7 @@ class _ExtraInfoFlowState extends State<ExtraInfoFlow> {
       username: _usernameController.text,
       fechaNacimiento: _fechaNacimiento!,
       esAdmin: _esAdmin,
+      areBaned: _areBaned,
       foto: widget.googlePhotoUrl,
     );
     Navigator.of(context).pop(true); // Indica que terminó
@@ -121,7 +154,14 @@ class _ExtraInfoFlowState extends State<ExtraInfoFlow> {
             const SizedBox(height: 16),
             Text('Elige tu nombre de usuario', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.deepPurple)),
             const SizedBox(height: 8),
-            TextField(controller: _usernameController, decoration: InputDecoration(labelText: 'Usuario', border: OutlineInputBorder())),
+            TextField(
+              controller: _usernameController,
+              decoration: InputDecoration(
+                labelText: 'Usuario',
+                border: OutlineInputBorder(),
+                errorText: _usernameError,
+              ),
+            ),
             const SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -129,7 +169,7 @@ class _ExtraInfoFlowState extends State<ExtraInfoFlow> {
                 TextButton(onPressed: _prevStep, child: Text('Atrás')),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple, foregroundColor: Colors.white),
-                  onPressed: _nextStep,
+                  onPressed: () async => await _nextStep(),
                   child: Text('Siguiente', style: TextStyle(color: Colors.white)),
                 ),
               ],
@@ -179,13 +219,7 @@ class _ExtraInfoFlowState extends State<ExtraInfoFlow> {
           children: [
             Icon(Icons.admin_panel_settings, size: 48, color: Colors.deepPurple),
             const SizedBox(height: 16),
-            Text('¿Eres administrador?', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.deepPurple)),
-            SwitchListTile(
-              title: Text('Soy admin'),
-              value: _esAdmin,
-              onChanged: (v) => setState(() => _esAdmin = v),
-              activeColor: Colors.deepPurple,
-            ),
+            Text('¡Listo! Pulsa finalizar para guardar tus datos.', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.deepPurple)),
             const SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
