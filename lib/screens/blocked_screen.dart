@@ -1,3 +1,11 @@
+/**
+ * Pantalla mostrada cuando el usuario está bloqueado.
+ * Permite cerrar sesión o eliminar la cuenta completamente (de Auth y Firestore).
+ * Incluye fondo personalizado y botones de acción.
+ * 
+ * @author Alberto Cárdeno Domínguez
+ */
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -5,6 +13,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class BlockedScreen extends StatelessWidget {
   const BlockedScreen({super.key});
 
+  /// Elimina la cuenta del usuario de Firestore y Auth, y cierra sesión.
   Future<void> _deleteAccount(BuildContext context) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -27,6 +36,7 @@ class BlockedScreen extends StatelessWidget {
     }
   }
 
+  /// Cierra la sesión del usuario y vuelve al inicio.
   Future<void> _signOut(BuildContext context) async {
     await FirebaseAuth.instance.signOut();
     Navigator.of(context).popUntil((route) => route.isFirst);
@@ -38,6 +48,7 @@ class BlockedScreen extends StatelessWidget {
       backgroundColor: Colors.deepPurple.shade50,
       body: Stack(
         children: [
+          // Fondo decorativo
           Positioned.fill(
             child: Image.asset(
               'lib/assets/Background.png',
@@ -74,6 +85,7 @@ class BlockedScreen extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
+                        // Botón para cerrar sesión
                         ElevatedButton.icon(
                           icon: const Icon(Icons.exit_to_app, color: Colors.white),
                           label: const Text('Salir', style: TextStyle(color: Colors.white)),
@@ -83,6 +95,7 @@ class BlockedScreen extends StatelessWidget {
                           onPressed: () => _signOut(context),
                         ),
                         const SizedBox(width: 16),
+                        // Botón para eliminar cuenta
                         ElevatedButton.icon(
                           icon: const Icon(Icons.delete, color: Colors.white),
                           label: const Text('Eliminar cuenta', style: TextStyle(color: Colors.white)),

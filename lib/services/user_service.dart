@@ -65,6 +65,15 @@ class UserService {
     return doc.exists ? doc.data() : null;
   }
 
+  /// Obtiene la información del usuario por UID.
+  static Future<Map<String, dynamic>?> getUserDataByUid(String uid) async {
+    final query = await _db.collection('usuarios').where('uid', isEqualTo: uid).limit(1).get();
+    if (query.docs.isNotEmpty) {
+      return query.docs.first.data();
+    }
+    return null;
+  }
+
   /**
    * Verifica si faltan datos adicionales del usuario en la base de datos.
    * @param data Un mapa con los datos del usuario.
