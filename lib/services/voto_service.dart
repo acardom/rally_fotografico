@@ -55,4 +55,12 @@ class VotosService {
     }
     return null;
   }
+
+  /// Borra todos los votos asociados a una foto por su Fid
+  static Future<void> deleteVotosByFotoId(String fid) async {
+    final query = await _db.collection('Votos').where('Fid', isEqualTo: fid).get();
+    for (final doc in query.docs) {
+      await _db.collection('Votos').doc(doc.id).delete();
+    }
+  }
 }

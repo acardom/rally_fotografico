@@ -6,6 +6,8 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'fotos_service.dart';
 
 class UserService {
   static final _db = FirebaseFirestore.instance;
@@ -104,5 +106,33 @@ class UserService {
       .limit(1)
       .get();
     return query.docs.isNotEmpty;
+  }
+
+  /// Cambia el estado de bloqueo del usuario en Firestore.
+  static Future<void> setBanStatus(String email, bool ban) async {
+    await _db.collection('usuarios').doc(email).update({'areBaned': ban});
+  }
+
+  /// Borra completamente la cuenta de usuario, su foto, sus fotos y su documento en Firestore.
+  static Future<void> deleteAccount(User user, String? email, String? fotoUrl) async {
+    // Borra foto de Storage si existe
+    if (fotoUrl != null && fotoUrl.isNotEmpty) {
+      try {
+        await FirebaseStorage.instance.refFromURL(fotoUrl).delete();
+      } catch (_) {}
+    }
+    // Borra todas las fotos del usuario (y sus votos asociados)
+    if (user.uid.isNotEmpty) {
+      final fotos = await FotosService.getFotosByUser(user.uid);
+      for (final foto in fotos) {
+        await FotosService.deleteFoto(foto['id']);
+      }
+    }
+    // Borra usuario de Firestore
+    if (email != null) {
+      await FirebaseFirestore.instance.collection('usuarios').doc(email).delete();
+    }
+    // Borra usuario de Auth
+    await user.delete();
   }
 }

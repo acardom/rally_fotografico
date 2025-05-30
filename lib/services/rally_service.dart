@@ -6,6 +6,14 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'fotos_service.dart ';
+import 'dart:io';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+
+import '../screens/crear_rally_screen.dart';
+
 
 class RallyService {
   static final _db = FirebaseFirestore.instance;
@@ -32,6 +40,7 @@ class RallyService {
     });
     return docRef.id;
   }
+
 
   /**
    * Obtiene la información de un rally por su ID.
@@ -71,6 +80,7 @@ class RallyService {
   static Future<void> deleteRally(String rallyId) async {
     final doc = await _db.collection('Rally').doc(rallyId).get();
     final data = doc.data();
+    // 1. Borra la foto del rally si existe
     if (data != null && data['foto'] != null && data['foto'].toString().isNotEmpty) {
       final fotoUrl = data['foto'] as String;
       try {
@@ -80,6 +90,12 @@ class RallyService {
         // Si la foto no existe o no es una URL válida, ignora el error.
       }
     }
+    // 2. Borra todas las fotos asociadas a este rally usando FotosService (que ya borra los votos)
+    final fotosQuery = await _db.collection('Fotos').where('rid', isEqualTo: rallyId).get();
+    for (final fotoDoc in fotosQuery.docs) {
+      await FotosService.deleteFoto(fotoDoc.id);
+    }
+    // 3. Borra el rally
     await _db.collection('Rally').doc(rallyId).delete();
   }
 }

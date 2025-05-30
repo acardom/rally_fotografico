@@ -110,69 +110,100 @@ class _ProfileTabState extends State<ProfileTab> {
     if (user == null) return;
     final newPasswordController = TextEditingController();
     final repeatPasswordController = TextEditingController();
+    String? newPasswordError;
+    String? repeatPasswordError;
+    String? generalError;
+
     await showDialog(
       context: context,
       builder: (ctx) {
-        return AlertDialog(
-          title: const Text('Cambiar contraseña'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: newPasswordController,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: 'Nueva contraseña'),
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Cambiar contraseña'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: newPasswordController,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      labelText: 'Nueva contraseña',
+                      errorText: (newPasswordError != null && newPasswordError!.isNotEmpty) ? newPasswordError : null,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: repeatPasswordController,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      labelText: 'Repetir contraseña',
+                      errorText: (repeatPasswordError != null && repeatPasswordError!.isNotEmpty) ? repeatPasswordError : null,
+                    ),
+                  ),
+                  if (generalError != null && generalError!.isNotEmpty)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 8, left: 2),
+                        child: Text(
+                          generalError!,
+                          style: const TextStyle(color: Colors.red, fontSize: 13),
+                        ),
+                      ),
+                    ),
+                ],
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: repeatPasswordController,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: 'Repetir contraseña'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancelar'),
-            ),
-            TextButton(
-              onPressed: () async {
-                final newPass = newPasswordController.text.trim();
-                final repeatPass = repeatPasswordController.text.trim();
-                if (newPass.isEmpty || repeatPass.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Rellena ambos campos')),
-                  );
-                  return;
-                }
-                if (newPass == _email) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('La contraseña no puede ser igual al email')),
-                  );
-                  return;
-                }
-                if (newPass == repeatPass) {
-                  try {
-                    await user.updatePassword(newPass);
-                    Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Contraseña actualizada')),
-                    );
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error: $e')),
-                    );
-                  }
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Las contraseñas no coinciden')),
-                  );
-                }
-              },
-              child: const Text('Guardar'),
-            ),
-          ],
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancelar'),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    setStateDialog(() {
+                      newPasswordError = null;
+                      repeatPasswordError = null;
+                      generalError = null;
+                    });
+                    final newPass = newPasswordController.text.trim();
+                    final repeatPass = repeatPasswordController.text.trim();
+
+                    if (newPass.isEmpty) {
+                      setStateDialog(() => newPasswordError = 'Obligatorio');
+                      return;
+                    }
+                    if (newPass.length < 6) {
+                      setStateDialog(() => newPasswordError = 'Debe tener al menos 6 caracteres');
+                      return;
+                    }
+                    if (repeatPass.isEmpty) {
+                      setStateDialog(() => repeatPasswordError = 'Obligatorio');
+                      return;
+                    }
+                    if (newPass == _email) {
+                      setStateDialog(() => newPasswordError = 'La contraseña no puede ser igual al email');
+                      return;
+                    }
+                    if (newPass != repeatPass) {
+                      setStateDialog(() => repeatPasswordError = 'Las contraseñas no coinciden');
+                      return;
+                    }
+                    try {
+                      await user.updatePassword(newPass);
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Contraseña actualizada')),
+                      );
+                    } catch (e) {
+                      setStateDialog(() => generalError = 'Error: $e');
+                    }
+                  },
+                  child: const Text('Guardar'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -199,18 +230,7 @@ class _ProfileTabState extends State<ProfileTab> {
       ),
     );
     if (confirm == true) {
-      // Borra foto de Storage si existe
-      if (_fotoUrl != null && _fotoUrl!.isNotEmpty) {
-        try {
-          await FirebaseStorage.instance.refFromURL(_fotoUrl!).delete();
-        } catch (_) {}
-      }
-      // Borra usuario de Firestore
-      if (_email != null) {
-        await FirebaseFirestore.instance.collection('usuarios').doc(_email).delete();
-      }
-      // Borra usuario de Auth
-      await user.delete();
+      await UserService.deleteAccount(user, _email, _fotoUrl);
       // Cierra sesión y navega fuera
       await FirebaseAuth.instance.signOut();
     }
@@ -327,11 +347,10 @@ class _ProfileTabState extends State<ProfileTab> {
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton.icon(
-                                icon: const Icon(Icons.lock, color: Colors.white),
+                                icon: const Icon(Icons.lock, color: Colors.deepPurple),
                                 label: const Text('Cambiar contraseña'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.deepPurple,
-                                  foregroundColor: Colors.white,
+                                style: OutlinedButton.styleFrom(
+                                  side: const BorderSide(color: Colors.deepPurple, width: 2), // borde más gordo
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                   padding: const EdgeInsets.symmetric(vertical: 14),
                                 ),
@@ -346,7 +365,7 @@ class _ProfileTabState extends State<ProfileTab> {
                               icon: const Icon(Icons.delete, color: Colors.red),
                               label: const Text('Borrar cuenta', style: TextStyle(color: Colors.red)),
                               style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: Colors.red),
+                                side: const BorderSide(color: Colors.red, width: 2), // borde más gordo
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                               ),
@@ -361,7 +380,7 @@ class _ProfileTabState extends State<ProfileTab> {
                               icon: const Icon(Icons.logout, color: Colors.deepPurple),
                               label: const Text('Cerrar sesión', style: TextStyle(color: Colors.deepPurple)),
                               style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: Colors.deepPurple),
+                                side: const BorderSide(color: Colors.deepPurple, width: 2), // borde más gordo
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                               ),

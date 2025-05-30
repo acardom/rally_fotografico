@@ -9,6 +9,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../services/user_service.dart';
 
 /// Widget principal de la pestaña de administración de usuarios.
 /// Ahora es Stateful para soportar el buscador.
@@ -23,10 +24,6 @@ class _UsersAdminTabState extends State<UsersAdminTab> {
   // Texto de búsqueda
   String _search = '';
 
-  /// Cambia el estado de bloqueo del usuario en Firestore.
-  Future<void> _setBanStatus(String email, bool ban) async {
-    await FirebaseFirestore.instance.collection('usuarios').doc(email).update({'areBaned': ban});
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -219,7 +216,7 @@ class _UsersAdminTabState extends State<UsersAdminTab> {
                                       ),
                                     );
                                     if (confirm == true) {
-                                      await _setBanStatus(email, !areBaned);
+                                      await UserService.setBanStatus(email, !areBaned);
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(
                                           content: Text(

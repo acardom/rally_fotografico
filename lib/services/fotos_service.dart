@@ -5,6 +5,8 @@
  */
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'voto_service.dart';
 
 class FotosService {
   static final _db = FirebaseFirestore.instance;
@@ -88,6 +90,16 @@ class FotosService {
         .toList();
   }
 
+  /// Obtiene todas las fotos por estado (por ejemplo, 'revisando', 'aprobado', 'denegado').
+  static Future<List<Map<String, dynamic>>> getFotosByEstado(String estado) async {
+    final querySnapshot = await _db.collection('Fotos')
+      .where('estado', isEqualTo: estado)
+      .get();
+    return querySnapshot.docs
+        .map((doc) => {'id': doc.id, ...doc.data() as Map<String, dynamic>})
+        .toList();
+  }
+
   /**
    * Verifica si faltan datos obligatorios en la foto.
    * @param data Un mapa con los datos de la foto.
@@ -101,5 +113,20 @@ class FotosService {
       (data['estado'] == null || data['estado'].toString().isEmpty) ||
       (data['foto'] == null || data['foto'].toString().isEmpty) ||
       (data['username'] == null || data['username'].toString().isEmpty);
+  }
+
+  /// Borra una foto y su archivo en Storage si existe.
+  static Future<void> deleteFoto(String fotoId) async {
+    final doc = await _db.collection('Fotos').doc(fotoId).get();
+    final data = doc.data();
+    if (data != null && data['foto'] != null && data['foto'].toString().isNotEmpty) {
+      try {
+        final ref = FirebaseStorage.instance.refFromURL(data['foto']);
+        await ref.delete();
+      } catch (_) {}
+    }
+    // Borra los votos asociados a esta foto
+    await VotosService.deleteVotosByFotoId(fotoId);
+    await _db.collection('Fotos').doc(fotoId).delete();
   }
 }

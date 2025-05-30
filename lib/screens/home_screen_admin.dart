@@ -6,6 +6,7 @@ import 'users_screen_admin.dart';
 import '../services/rally_service.dart';
 import '../services/fotos_service.dart';
 import 'crear_rally_screen.dart';
+import 'revision_fotos_screen.dart';
 
 class HomeScreenAdmin extends StatefulWidget {
   @override
@@ -241,6 +242,8 @@ class _HomeScreenAdminState extends State<HomeScreenAdmin> {
           ),
         ],
       ),
+      // Pantalla de gestión de fotos (nuevo apartado)
+      RevisionFotosScreen(),
       // Pestaña de usuarios
       const UsersAdminTab(),
       // Pantalla de perfil
@@ -251,11 +254,13 @@ class _HomeScreenAdminState extends State<HomeScreenAdmin> {
       backgroundColor: Colors.deepPurple.shade50,
       body: screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed, // <-- Asegura que todos los botones se muestren y la animación sea normal
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.deepPurple,
         onTap: (i) => setState(() => _selectedIndex = i),
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.storage), label: 'Gestión'),
           BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Usuarios'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
         ],
