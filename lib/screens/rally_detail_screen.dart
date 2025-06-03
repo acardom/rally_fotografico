@@ -112,6 +112,7 @@ class _RallyDetailScreenState extends State<RallyDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final nombreRally = widget.rally['nombre'] ?? '';
+    final bool puedeSubirFoto = !_hasFoto && !RallyService.rallyFinished(widget.rally);
     return Scaffold(
       backgroundColor: Colors.deepPurple.shade50,
       body: Stack(
@@ -128,7 +129,7 @@ class _RallyDetailScreenState extends State<RallyDetailScreen> {
             children: [
               // Barra superior: flecha atrás y buscador por username
               Padding(
-                padding: const EdgeInsets.fromLTRB(10, 60, 20, 8),
+                padding: const EdgeInsets.fromLTRB(10, 60, 20, 16),
                 child: Row(
                   children: [
                     IconButton(
@@ -161,7 +162,7 @@ class _RallyDetailScreenState extends State<RallyDetailScreen> {
               // Listado de fotos del rally
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.only(bottom: 80),
+                  padding: EdgeInsets.zero,
                   child: FutureBuilder<List<Map<String, dynamic>>>(
                     future: FotosService.getFotosByRally(rallyId),
                     builder: (context, snapshot) {
@@ -174,7 +175,11 @@ class _RallyDetailScreenState extends State<RallyDetailScreen> {
                         (foto['estado'] == 'aprobado') &&
                         (_search.isEmpty || (foto['username'] ?? '').toString().toLowerCase().contains(_search))
                       ).toList();
-                      if (filteredFotos.isEmpty) {
+
+                      // Elimina el filtro que ocultaba tus propias fotos
+                      final finalFotos = filteredFotos;
+
+                      if (finalFotos.isEmpty) {
                         return Center(
                           child: Text(
                             'No hay fotos para mostrar.',
@@ -185,10 +190,10 @@ class _RallyDetailScreenState extends State<RallyDetailScreen> {
                       // Lista de fotos estilo Instagram
                       return ListView.builder(
                         controller: _scrollController,
-                        padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
-                        itemCount: filteredFotos.length,
+                        padding: EdgeInsets.fromLTRB(12, 0, 12, puedeSubirFoto ? 80 : 20),
+                        itemCount: finalFotos.length,
                         itemBuilder: (context, index) {
-                          final foto = filteredFotos[index];
+                          final foto = finalFotos[index];
                           final fotoUrl = foto['foto'] as String? ?? '';
                           final uid = foto['uid'] ?? '';
                           final username = foto['username'] ?? '';
@@ -323,7 +328,7 @@ class _RallyDetailScreenState extends State<RallyDetailScreen> {
             ],
           ),
           // Botón para subir foto (solo si no tiene ya una foto y el rally no ha finalizado)
-          if (!_hasFoto && !RallyService.rallyFinished(widget.rally))
+          if (puedeSubirFoto)
             Positioned(
               bottom: 24,
               left: 0,

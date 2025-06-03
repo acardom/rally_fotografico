@@ -206,34 +206,7 @@ class _ProfileTabState extends State<ProfileTab> {
     );
   }
 
-  /// Elimina la cuenta del usuario y todos sus datos asociados usando UserService.
-  /// @author Alberto Cárdeno Domínguez
-  Future<void> _deleteAccount() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Borrar cuenta'),
-        content: const Text('¿Seguro que quieres borrar tu cuenta? Esta acción no se puede deshacer.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Borrar', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-    if (confirm == true) {
-      await UserService.deleteAccount(user, _email, _fotoUrl);
-      // Cierra sesión y navega fuera
-      await FirebaseAuth.instance.signOut();
-    }
-  }
+ 
 
   @override
   Widget build(BuildContext context) {
@@ -370,7 +343,13 @@ class _ProfileTabState extends State<ProfileTab> {
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                               ),
-                              onPressed: _deleteAccount,
+                              onPressed: () {
+                                UserService.confirmAndDeleteAccount(
+                                  context,
+                                  _email,
+                                  _fotoUrl,
+                                );
+                              },
                             ),
                           ),
                           const SizedBox(height: 12),

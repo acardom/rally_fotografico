@@ -44,7 +44,7 @@ class _UsersAdminTabState extends State<UsersAdminTab> {
             children: [
               // Buscador con icono de lupa.
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 60, 16, 8),
+                padding: const EdgeInsets.fromLTRB(16, 60, 16, 16),
                 child: TextField(
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.search),

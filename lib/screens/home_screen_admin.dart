@@ -49,7 +49,7 @@ class _HomeScreenAdminState extends State<HomeScreenAdmin> {
             children: [
               // Buscador de rallies
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 60, 16, 8),
+                padding: const EdgeInsets.fromLTRB(16, 60, 16, 16),
                 child: TextField(
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.search),
