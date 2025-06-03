@@ -52,6 +52,7 @@ class FotosService {
    * @param rid El ID del rally.
    * @param uid El ID del usuario.
    * @return true si ya existe una foto, false en caso contrario.
+   * @author Alberto Cárdeno Domínguez
    */
   static Future<bool> userHasFotoInRally(String rid, String uid) async {
     final query = await _db.collection('Fotos')
@@ -76,7 +77,7 @@ class FotosService {
         .toList();
   }
 
-    /**
+  /**
    * Obtiene todas las fotos subidas por un usuario.
    * @param uid El ID del usuario.
    * @return Una lista de mapas con los datos de cada foto.
@@ -90,7 +91,11 @@ class FotosService {
         .toList();
   }
 
-  /// Obtiene todas las fotos por estado (por ejemplo, 'revisando', 'aprobado', 'denegado').
+  /**
+   * Obtiene todas las fotos por estado (por ejemplo, 'revisando', 'aprobado', 'denegado').
+   * @param estado El estado de la foto.
+   * @return Una lista de mapas con los datos de cada foto.
+   */
   static Future<List<Map<String, dynamic>>> getFotosByEstado(String estado) async {
     final querySnapshot = await _db.collection('Fotos')
       .where('estado', isEqualTo: estado)
@@ -115,7 +120,11 @@ class FotosService {
       (data['username'] == null || data['username'].toString().isEmpty);
   }
 
-  /// Borra una foto y su archivo en Storage si existe.
+  /**
+   * Borra una foto y su archivo en Storage si existe.
+   * También borra los votos asociados a la foto.
+   * @param fotoId El ID de la foto.
+   */
   static Future<void> deleteFoto(String fotoId) async {
     final doc = await _db.collection('Fotos').doc(fotoId).get();
     final data = doc.data();
@@ -130,3 +139,8 @@ class FotosService {
     await _db.collection('Fotos').doc(fotoId).delete();
   }
 }
+
+// Comentario: FotosService centraliza la gestión de fotos en Firestore y Storage.
+// - Permite guardar, consultar, filtrar y borrar fotos.
+// - Incluye utilidades para saber si un usuario ya ha subido foto a un rally.
+// - Borra también los votos asociados al eliminar una foto.

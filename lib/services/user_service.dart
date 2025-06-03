@@ -7,33 +7,36 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import 'fotos_service.dart';
+import 'package:rally_fotografico/screens/login_screen.dart';
 
 class UserService {
   static final _db = FirebaseFirestore.instance;
 
   /**
-   * Verifica si un usuario existe en la base de datos.
-   * @param email El correo electrónico del usuario a verificar.
-   * @return true si el usuario existe, false en caso contrario.
+   * Comprueba si existe un usuario por email.
+   * @param email Email del usuario.
+   * @return true si existe, false si no.
    */
-  // Comentario: userExists comprueba si existe un usuario por email.
   static Future<bool> userExists(String email) async {
     final doc = await _db.collection('usuarios').doc(email).get();
     return doc.exists;
   }
 
   /**
-   * Guarda la información del usuario en la base de datos.
-   * @param uid El ID único del usuario.
-   * @param email El correo electrónico del usuario.
-   * @param nombre El nombre del usuario.
-   * @param username El nombre de usuario elegido.
-   * @param fechaNacimiento La fecha de nacimiento del usuario.
-   * @param esAdmin Indica si el usuario tiene rol de administrador.
-   * @param foto La URL de la foto de perfil del usuario (opcional).
+   * Guarda los datos del usuario en Firestore.
+   * @param uid ID de usuario.
+   * @param email Email.
+   * @param nombre Nombre.
+   * @param username Nombre de usuario.
+   * @param fechaNacimiento Fecha de nacimiento.
+   * @param esAdmin Si es admin.
+   * @param areBaned Si está baneado.
+   * @param foto URL de la foto.
    */
-  // Comentario: saveUserData guarda o actualiza los datos del usuario en Firestore.
   static Future<void> saveUserData({
     required String uid,
     required String email,
@@ -57,17 +60,20 @@ class UserService {
   }
 
   /**
-   * Obtiene la información del usuario desde la base de datos.
-   * @param email El correo electrónico del usuario cuya información se desea obtener.
-   * @return Un mapa con los datos del usuario, o null si el usuario no existe.
+   * Obtiene los datos de un usuario por email.
+   * @param email Email del usuario.
+   * @return Mapa con los datos o null.
    */
-  // Comentario: getUserData obtiene los datos del usuario desde Firestore.
   static Future<Map<String, dynamic>?> getUserData(String email) async {
     final doc = await _db.collection('usuarios').doc(email).get();
     return doc.exists ? doc.data() : null;
   }
 
-  /// Obtiene la información del usuario por UID.
+  /**
+   * Obtiene los datos de un usuario por UID.
+   * @param uid UID del usuario.
+   * @return Mapa con los datos o null.
+   */
   static Future<Map<String, dynamic>?> getUserDataByUid(String uid) async {
     final query = await _db.collection('usuarios').where('uid', isEqualTo: uid).limit(1).get();
     if (query.docs.isNotEmpty) {
@@ -77,29 +83,27 @@ class UserService {
   }
 
   /**
-   * Verifica si faltan datos adicionales del usuario en la base de datos.
-   * @param data Un mapa con los datos del usuario.
-   * @return true si faltan datos, false si toda la información necesaria está presente.
+   * Comprueba si faltan datos obligatorios en el usuario.
+   * @param data Mapa de datos.
+   * @return true si faltan datos, false si está completo.
    */
-  //needsExtraInfo valida si faltan datos obligatorios en el usuario.
   static bool needsExtraInfo(Map<String, dynamic>? data) {
     if (data == null) return true;
     return 
       (data['nombre'] == null || 
-      data['nombre'].toString().isEmpty) ||
+      (data['nombre'] as String).isEmpty) ||
       (data['username'] == null || 
-      data['username'].toString().isEmpty) ||
-      (data['fechaNacimiento'] == null) ||
-      (data['esAdmin'] == null);
-      (data['areBaned'] == null);
+      (data['username'] as String).isEmpty) ||
+      data['fechaNacimiento'] == null ||
+      data['esAdmin'] == null ||
+      data['areBaned'] == null;
   }
 
   /**
-   * Verifica si un username ya está en uso en la base de datos.
-   * @param username El nombre de usuario a comprobar.
-   * @return true si el username existe, false en caso contrario.
+   * Comprueba si existe un username en la base de datos.
+   * @param username Nombre de usuario.
+   * @return true si existe, false si no.
    */
-  // Comentario: usernameExists comprueba si existe un usuario por nombre de usuario.
   static Future<bool> usernameExists(String username) async {
     final query = await _db.collection('usuarios')
       .where('username', isEqualTo: username)
@@ -108,31 +112,184 @@ class UserService {
     return query.docs.isNotEmpty;
   }
 
-  /// Cambia el estado de bloqueo del usuario en Firestore.
+  /**
+   * Cambia el estado de bloqueo de un usuario.
+   * @param email Email del usuario.
+   * @param ban true para bloquear, false para desbloquear.
+   */
   static Future<void> setBanStatus(String email, bool ban) async {
     await _db.collection('usuarios').doc(email).update({'areBaned': ban});
   }
 
-  /// Borra completamente la cuenta de usuario, su foto, sus fotos y su documento en Firestore.
+  /**
+   * Carga los datos del usuario actual y ejecuta un callback para actualizar el estado.
+   * @param context Contexto.
+   * @param updateState Callback para actualizar el estado.
+   */
+  static Future<void> loadUser(BuildContext context, Function(Map<String, dynamic>) updateState) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final data = await getUserData(user.email ?? '');
+    updateState({
+      'fotoUrl': data?['foto'] as String?,
+      'username': data?['username'] as String?,
+      'email': data?['email'] as String?,
+      'uid': data?['uid'] as String?,
+      'loading': false,
+    });
+  }
+
+  /**
+   * Permite seleccionar y subir una nueva foto de perfil.
+   * @param context Contexto.
+   * @param currentFotoUrl URL actual de la foto.
+   * @param updateState Callback para actualizar la foto.
+   */
+  static Future<void> pickAndUploadPhoto(BuildContext context, String? currentFotoUrl, Function(String?) updateState) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    if (picked != null) {
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('users/${user.uid}_${DateTime.now().millisecondsSinceEpoch}_${picked.name}');
+      await ref.putFile(File(picked.path));
+      final url = await ref.getDownloadURL();
+      if (currentFotoUrl != null && currentFotoUrl.isNotEmpty) {
+        try {
+          await FirebaseStorage.instance.refFromURL(currentFotoUrl).delete();
+        } catch (_) {}
+      }
+      await FirebaseFirestore.instance.collection('usuarios').doc(user.email).update({'foto': url});
+      updateState(url);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Foto actualizada')));
+    }
+  }
+
+  /**
+   * Habilita la edición del nombre de usuario.
+   * @param enableEditing Callback para habilitar la edición.
+   */
+  static void editUsername(Function() enableEditing) {
+    enableEditing();
+  }
+
+  /**
+   * Guarda el nuevo nombre de usuario si es válido y no está repetido.
+   * @param context Contexto.
+   * @param newUsername Nuevo username.
+   * @param currentUsername Username actual.
+   * @param email Email del usuario.
+   * @param updateState Callback para actualizar el estado.
+   */
+  static Future<void> saveUsername(BuildContext context, String newUsername, String? currentUsername, String? email, Function(String, bool) updateState) async {
+    if (newUsername.isEmpty) return;
+    if (newUsername == currentUsername) {
+      updateState(newUsername, false);
+      return;
+    }
+    final exists = await usernameExists(newUsername);
+    if (exists) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ese nombre de usuario ya existe')),
+      );
+      return;
+    }
+    await FirebaseFirestore.instance.collection('usuarios').doc(email).update({'username': newUsername});
+    updateState(newUsername, false);
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nombre de usuario actualizado')));
+  }
+
+  /**
+   * Muestra un diálogo de confirmación y elimina la cuenta del usuario.
+   * @param context Contexto.
+   * @param email Email del usuario.
+   * @param fotoUrl URL de la foto.
+   */
+  static Future<void> confirmAndDeleteAccount(BuildContext context, String? email, String? fotoUrl) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Borrar cuenta'),
+        content: const Text('¿Seguro que quieres borrar tu cuenta? Esta acción no se puede deshacer.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Borrar', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true) {
+      await deleteAccount(user, email, fotoUrl);
+      await FirebaseAuth.instance.signOut();
+    }
+  }
+
+  /**
+   * Elimina la cuenta del usuario y todos sus datos asociados.
+   * @param user Usuario de Firebase.
+   * @param email Email.
+   * @param fotoUrl URL de la foto.
+   */
   static Future<void> deleteAccount(User user, String? email, String? fotoUrl) async {
-    // Borra foto de Storage si existe
     if (fotoUrl != null && fotoUrl.isNotEmpty) {
       try {
         await FirebaseStorage.instance.refFromURL(fotoUrl).delete();
       } catch (_) {}
     }
-    // Borra todas las fotos del usuario (y sus votos asociados)
     if (user.uid.isNotEmpty) {
       final fotos = await FotosService.getFotosByUser(user.uid);
       for (final foto in fotos) {
         await FotosService.deleteFoto(foto['id']);
       }
     }
-    // Borra usuario de Firestore
-    if (email != null) {
+    if (email != null && email.isNotEmpty) {
       await FirebaseFirestore.instance.collection('usuarios').doc(email).delete();
     }
-    // Borra usuario de Auth
     await user.delete();
   }
+
+  /**
+   * Elimina la cuenta y cierra sesión.
+   * @param context Contexto.
+   */
+  static Future<void> deleteAccountAndSignOut(BuildContext context) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final email = user.email;
+    try {
+      if (email != null && email.isNotEmpty) {
+        await FirebaseFirestore.instance.collection('usuarios').doc(email).delete();
+      }
+      await user.delete();
+      await FirebaseAuth.instance.signOut();
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al eliminar la cuenta: $e')),
+      );
+    }
+  }
+
+  /**
+   * Cierra la sesión del usuario.
+   * @param context Contexto.
+   */
+  static Future<void> signOut(BuildContext context) async {
+    await FirebaseAuth.instance.signOut();
+    Navigator.of(context).popUntil((route) => route.isFirst);
+  }
 }
+
+// Comentario: UserService centraliza la gestión de usuarios en Firestore y Storage.
+// - Permite crear, consultar, editar y borrar usuarios.
+// - Gestiona la subida y borrado de fotos de perfil y la edición de username.
+// - Permite bloquear/desbloquear usuarios y eliminar cuentas completamente.

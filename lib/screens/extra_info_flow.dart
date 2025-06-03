@@ -1,12 +1,33 @@
 /**
  * Widget para el flujo de información extra del usuario tras el registro/login.
  * Solicita nombre, usuario, fecha de nacimiento y si es admin.
- * @author Alberto Cárdeno
+ * @author Alberto Cárdeno Domínguez
  */
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/user_service.dart';
+import 'home_screen.dart';
+import 'home_screen_admin.dart';
+import '../main.dart'; // Añade esta importación para usar AuthGate
+
+class ExtraInfoScreen extends StatelessWidget {
+  final User user;
+  final String? googlePhotoUrl;
+  final String? googleDisplayName;
+  const ExtraInfoScreen({required this.user, this.googlePhotoUrl, this.googleDisplayName, Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return ExtraInfoFlow(
+      user: user,
+      googlePhotoUrl: googlePhotoUrl,
+      googleDisplayName: googleDisplayName,
+      key: key,
+      // Al finalizar, navega a la pantalla principal
+    );
+  }
+}
 
 class ExtraInfoFlow extends StatefulWidget {
   final User user;
@@ -36,6 +57,7 @@ class _ExtraInfoFlowState extends State<ExtraInfoFlow> {
   }
 
   /// Avanza al siguiente paso del flujo
+  /// @author Alberto Cárdeno Domínguez
   Future<void> _nextStep() async {
     if (_step == 1) {
       // Validar username antes de pasar al siguiente paso
@@ -63,6 +85,7 @@ class _ExtraInfoFlowState extends State<ExtraInfoFlow> {
   }
 
   /// Retrocede al paso anterior del flujo
+  /// @author Alberto Cárdeno Domínguez
   void _prevStep() {
     setState(() {
       _step--;
@@ -70,6 +93,7 @@ class _ExtraInfoFlowState extends State<ExtraInfoFlow> {
   }
 
   /// Guarda la información del usuario y finaliza el flujo
+  /// @author Alberto Cárdeno Domínguez
   Future<void> _saveAndFinish() async {
     // Comprobar si el username ya existe en Firestore
     final exists = await UserService.usernameExists(_usernameController.text);
@@ -91,7 +115,11 @@ class _ExtraInfoFlowState extends State<ExtraInfoFlow> {
       areBaned: _areBaned,
       foto: widget.googlePhotoUrl,
     );
-    Navigator.of(context).pop(true); // Indica que terminó
+    // Navega a AuthGate para que decida la pantalla correcta
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => AuthGate()),
+      (route) => false,
+    );
   }
 
   @override
@@ -125,6 +153,7 @@ class _ExtraInfoFlowState extends State<ExtraInfoFlow> {
   }
 
   /// Construye el widget correspondiente al paso actual del flujo
+  /// @author Alberto Cárdeno Domínguez
   Widget _buildStep() {
     switch (_step) {
       case 0:

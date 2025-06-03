@@ -1,7 +1,7 @@
 /**
  * Punto de entrada principal de la app Rally Fotográfico.
  * Inicializa Firebase y gestiona la autenticación y navegación principal.
- * @author Alberto Cárdeno
+ * @author Alberto Cárdeno Domínguez
  */
 
 import 'package:flutter/material.dart';
@@ -13,7 +13,9 @@ import 'screens/home_screen_admin.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'services/user_service.dart';
 import 'screens/blocked_screen.dart';
+import 'screens/extra_info_flow.dart';
 
+/// Función principal que inicializa Firebase y lanza la app.
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -21,7 +23,7 @@ void main() async {
 }
 
 /**
- * Clase principal de la aplicación.
+ * Widget raíz de la aplicación.
  * Configura el tema y la pantalla de inicio según el estado de autenticación del usuario.
  */
 class MyApp extends StatelessWidget {
@@ -42,16 +44,24 @@ class MyApp extends StatelessWidget {
 /**
  * Widget que determina qué pantalla mostrar
  * según el estado de autenticación del usuario.
+ * - Si el usuario está autenticado y bloqueado, muestra BlockedScreen.
+ * - Si faltan datos, muestra ExtraInfoScreen.
+ * - Si es admin, muestra HomeScreenAdmin.
+ * - Si es usuario normal, muestra HomeScreen.
+ * - Si no está autenticado, muestra LoginScreen.
  */
 class AuthGate extends StatelessWidget {
+  /// Obtiene los datos del usuario desde Firestore.
   Future<Map<String, dynamic>?> _getUserData(User user) async {
     return await UserService.getUserData(user.email ?? '');
   }
 
+  /// Comprueba si el usuario es administrador.
   Future<bool> _isAdmin(Map<String, dynamic>? userData) async {
     return userData != null && userData['esAdmin'] == true;
   }
 
+  /// Comprueba si el usuario está bloqueado.
   Future<bool> _isBanned(Map<String, dynamic>? userData) async {
     return userData != null && userData['areBaned'] == true;
   }
@@ -66,6 +76,7 @@ class AuthGate extends StatelessWidget {
         }
         final user = snapshot.data;
         if (user != null) {
+          // Si hay usuario autenticado, obtiene sus datos y decide la pantalla
           return FutureBuilder<Map<String, dynamic>?>(
             future: _getUserData(user),
             builder: (context, userSnapshot) {
@@ -80,7 +91,11 @@ class AuthGate extends StatelessWidget {
               if (userData != null && userData['areBaned'] == true) {
                 return const BlockedScreen();
               }
-              // Si es admin, HomeScreenAdmin. Si no, HomeScreen (aunque no exista el campo)
+              // Si faltan datos, muestra ExtraInfoScreen
+              if (UserService.needsExtraInfo(userData)) {
+                return ExtraInfoScreen(user: user);
+              }
+              // Si es admin, HomeScreenAdmin. Si no, HomeScreen
               if (userData != null && userData['esAdmin'] == true) {
                 return HomeScreenAdmin();
               } else {
@@ -89,6 +104,7 @@ class AuthGate extends StatelessWidget {
             },
           );
         }
+        // Si no hay usuario autenticado, muestra LoginScreen
         return LoginScreen();
       },
     );
@@ -96,5 +112,6 @@ class AuthGate extends StatelessWidget {
 }
 
 // Comentario: main() inicializa Firebase y lanza la app principal.
-// Comentario: MyApp es el widget raíz de la aplicación.
-// Comentario: AuthGate decide si mostrar HomeScreen o LoginScreen según el estado de autenticación.
+// - MyApp es el widget raíz y configura el tema y rutas.
+// - AuthGate decide si mostrar HomeScreen, HomeScreenAdmin, ExtraInfoScreen, BlockedScreen o LoginScreen según el estado de autenticación y datos del usuario.
+// - El flujo garantiza que solo usuarios con perfil completo y no bloqueados acceden a la app.

@@ -1,3 +1,9 @@
+/**
+ * Pantalla principal para administradores.
+ * Muestra un buscador, botón para crear rallies, lista de rallies, gestión de fotos y usuarios, y perfil.
+ * @author Alberto Cárdeno Domínguez
+ */
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -14,19 +20,25 @@ class HomeScreenAdmin extends StatefulWidget {
 }
 
 class _HomeScreenAdminState extends State<HomeScreenAdmin> {
+  // Índice de la pestaña seleccionada en la barra de navegación inferior
   int _selectedIndex = 0;
+  // Término de búsqueda para filtrar rallies
   String _search = '';
 
-  // Refresca la lista tras borrar
+  /**
+   * Refresca la lista de rallies actualizando el estado del widget.
+   */
   void _refresh() => setState(() {});
 
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
+    // Lista de pantallas para cada pestaña
     final List<Widget> screens = [
-      // Nueva pantalla principal de admin: buscador, botón crear y lista de rallies
+      // Pantalla principal: buscador, botón para crear rally y lista de rallies
       Stack(
         children: [
+          // Fondo decorativo
           Positioned.fill(
             child: Image.asset(
               'lib/assets/Background.png',
@@ -35,9 +47,9 @@ class _HomeScreenAdminState extends State<HomeScreenAdmin> {
           ),
           Column(
             children: [
-              // Buscador
+              // Buscador de rallies
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 40, 16, 8),
+                padding: const EdgeInsets.fromLTRB(16, 60, 16, 8),
                 child: TextField(
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.search),
@@ -56,7 +68,7 @@ class _HomeScreenAdminState extends State<HomeScreenAdmin> {
                   },
                 ),
               ),
-              // Botón crear nuevo rally
+              // Botón para crear un nuevo rally
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: SizedBox(
@@ -85,22 +97,25 @@ class _HomeScreenAdminState extends State<HomeScreenAdmin> {
                 child: FutureBuilder<List<Map<String, dynamic>>>(
                   future: RallyService.getAllRallies(),
                   builder: (context, snapshot) {
+                    // Muestra un indicador de carga mientras se obtienen los datos
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
                     }
+                    // Muestra un mensaje si no hay rallies
                     if (!snapshot.hasData || snapshot.data!.isEmpty) {
                       return const Center(child: Text('No hay rallies creados.'));
                     }
-                    // Filtrar por búsqueda
+                    // Filtra rallies según el término de búsqueda
                     final rallies = snapshot.data!
                         .where((rally) =>
-                          _search.isEmpty ||
-                          (rally['nombre'] ?? '').toString().toLowerCase().contains(_search)
-                        )
+                            _search.isEmpty ||
+                            (rally['nombre'] ?? '').toString().toLowerCase().contains(_search))
                         .toList();
+                    // Muestra un mensaje si no hay coincidencias
                     if (rallies.isEmpty) {
                       return const Center(child: Text('No hay rallies para mostrar.'));
                     }
+                    // Construye la lista de rallies
                     return ListView.builder(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                       itemCount: rallies.length,
@@ -115,6 +130,7 @@ class _HomeScreenAdminState extends State<HomeScreenAdmin> {
                                 ? rally['fechaFin'] as DateTime
                                 : null;
                         final abierto = fechaFin == null ? false : fechaFin.isAfter(DateTime.now());
+                        // Obtiene el nombre del creador
                         return FutureBuilder<Map<String, dynamic>?>(
                           future: FirebaseFirestore.instance
                               .collection('usuarios')
@@ -124,6 +140,7 @@ class _HomeScreenAdminState extends State<HomeScreenAdmin> {
                               .then((snap) => snap.docs.isNotEmpty ? snap.docs.first.data() as Map<String, dynamic> : null),
                           builder: (context, userSnap) {
                             final creadorUsername = userSnap.data?['username'] ?? creadorUid;
+                            // Obtiene el número de fotos aprobadas
                             return FutureBuilder<List<Map<String, dynamic>>>(
                               future: FotosService.getFotosByRally(rally['id']),
                               builder: (context, fotosSnap) {
@@ -138,7 +155,7 @@ class _HomeScreenAdminState extends State<HomeScreenAdmin> {
                                     padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
                                     child: Row(
                                       children: [
-                                        // Foto rally
+                                        // Muestra la foto del rally o un icono por defecto
                                         foto.isNotEmpty
                                             ? ClipRRect(
                                                 borderRadius: BorderRadius.circular(12),
@@ -159,7 +176,7 @@ class _HomeScreenAdminState extends State<HomeScreenAdmin> {
                                                 child: const Icon(Icons.camera_alt, size: 36, color: Colors.deepPurple),
                                               ),
                                         const SizedBox(width: 16),
-                                        // Info rally
+                                        // Información del rally
                                         Expanded(
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -194,11 +211,12 @@ class _HomeScreenAdminState extends State<HomeScreenAdmin> {
                                             ],
                                           ),
                                         ),
-                                        // Botón borrar
+                                        // Botón para borrar el rally
                                         IconButton(
                                           icon: const Icon(Icons.delete, color: Colors.red, size: 28),
                                           tooltip: 'Borrar rally',
                                           onPressed: () async {
+                                            // Muestra un diálogo de confirmación antes de borrar
                                             final confirm = await showDialog<bool>(
                                               context: context,
                                               builder: (ctx) => AlertDialog(
@@ -217,6 +235,7 @@ class _HomeScreenAdminState extends State<HomeScreenAdmin> {
                                               ),
                                             );
                                             if (confirm == true) {
+                                              // Borra el rally y refresca la lista
                                               await RallyService.deleteRally(rally['id']);
                                               _refresh();
                                               ScaffoldMessenger.of(context).showSnackBar(
@@ -242,19 +261,20 @@ class _HomeScreenAdminState extends State<HomeScreenAdmin> {
           ),
         ],
       ),
-      // Pantalla de gestión de fotos (nuevo apartado)
+      // Pantalla de gestión de fotos
       RevisionFotosScreen(),
-      // Pestaña de usuarios
+      // Pestaña de gestión de usuarios
       const UsersAdminTab(),
-      // Pantalla de perfil
+      // Pestaña de perfil del administrador
       const ProfileTab(),
     ];
 
     return Scaffold(
       backgroundColor: Colors.deepPurple.shade50,
       body: screens[_selectedIndex],
+      // Barra de navegación inferior para cambiar entre pestañas
       bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed, // <-- Asegura que todos los botones se muestren y la animación sea normal
+        type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.deepPurple,
         onTap: (i) => setState(() => _selectedIndex = i),
@@ -268,3 +288,11 @@ class _HomeScreenAdminState extends State<HomeScreenAdmin> {
     );
   }
 }
+
+// Comentario: HomeScreenAdmin es la pantalla principal para administradores.
+// - Muestra un buscador para filtrar rallies por nombre.
+// - Incluye un botón para crear un nuevo rally, que navega a CrearRallyScreen.
+// - Lista todos los rallies con su foto, nombre, creador, estado (abierto/cerrado) y número de fotos aprobadas.
+// - Permite borrar un rally tras confirmar mediante un diálogo.
+// - Incluye pestañas para gestión de fotos (RevisionFotosScreen), usuarios (UsersAdminTab) y perfil (ProfileTab).
+// - Usa RallyService para obtener y borrar rallies, y FotosService para contar fotos aprobadas.

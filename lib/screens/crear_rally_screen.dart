@@ -7,11 +7,8 @@
  */
 
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../services/rally_service.dart';
-import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:firebase_storage/firebase_storage.dart';
 
 class CrearRallyScreen extends StatefulWidget {
   @override
@@ -19,99 +16,26 @@ class CrearRallyScreen extends StatefulWidget {
 }
 
 class _CrearRallyScreenState extends State<CrearRallyScreen> {
-  // Clave para el formulario
+  // Clave para el formulario de validación
   final _formKey = GlobalKey<FormState>();
-  // Controlador para el campo de nombre
+  // Controlador para el campo de nombre del rally
   final _nombreController = TextEditingController();
-  // Fecha de fin seleccionada
+  // Fecha de finalización seleccionada
   DateTime? _fechaFin;
   // Archivo de la foto seleccionada
   File? _fotoFile;
-  // Estado de guardado (para mostrar loading)
+  // Indica si se está guardando (para mostrar el indicador de carga)
   bool _saving = false;
-  // Controla si hay error en la fecha
+  // Controla si hay un error en la fecha de fin
   bool _fechaFinError = false;
 
+  /**
+   * Libera los recursos del controlador al destruir el widget.
+   */
   @override
   void dispose() {
     _nombreController.dispose();
     super.dispose();
-  }
-
-  /// Abre la galería para seleccionar una imagen y la guarda en _fotoFile.
-  Future<void> _pickImage() async {
-    try {
-      final picker = ImagePicker();
-      final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
-      if (picked != null) {
-        setState(() {
-          _fotoFile = File(picked.path);
-        });
-      }
-    } catch (e) {
-      // Si ocurre un error con los plugins, muestra un mensaje.
-      String msg = e.toString().contains('MissingPluginException')
-          ? '' : 'No se pudo seleccionar la imagen: $e';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg)),
-      );
-    }
-  }
-
-  /// Sube la imagen seleccionada a Firebase Storage y devuelve la URL.
-  Future<String?> _uploadImage(File? image) async {
-    if (image == null) return null;
-    try {
-      final storageRef = FirebaseStorage.instance
-          .ref()
-          .child('rallies/${DateTime.now().millisecondsSinceEpoch}_${image.path.split('/').last}');
-      final uploadTask = await storageRef.putFile(image);
-      return await uploadTask.ref.getDownloadURL();
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error subiendo la imagen: $e')),
-      );
-      return null;
-    }
-  }
-
-  /// Guarda el rally en Firestore. Si no hay fecha, pone por defecto un día después de hoy.
-  Future<void> _guardarRally() async {
-    // Valida el formulario, si no es válido no continúa
-    if (!_formKey.currentState!.validate()) return;
-    setState(() => _saving = true);
-    try {
-      // Obtiene el UID del usuario actual
-      final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
-      String? fotoUrl;
-      // Si hay foto seleccionada, la sube a Storage y obtiene la URL
-      if (_fotoFile != null) {
-        fotoUrl = await _uploadImage(_fotoFile);
-      }
-      // Guarda los datos del rally en Firestore usando el servicio
-      await RallyService.saveRallyData(
-        nombre: _nombreController.text.trim(),
-        uid: uid,
-        fechaFin: _fechaFin!,
-        foto: fotoUrl,
-      );
-      // Vuelve atrás y muestra mensaje de éxito
-      Navigator.pop(context, true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Rally creado correctamente')),
-      );
-    } catch (e) {
-      // Si hay error de permisos o cualquier otro, muestra mensaje adecuado
-      String msg = e.toString().contains('PERMISSION_DENIED')
-          ? 'No tienes permisos para crear rallies.'
-          : 'Error al crear rally: $e';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg)),
-      );
-    } finally {
-      // Quita el estado de guardando
-      setState(() => _saving = false);
-    }
   }
 
   @override
@@ -127,6 +51,7 @@ class _CrearRallyScreenState extends State<CrearRallyScreen> {
               fit: BoxFit.cover,
             ),
           ),
+          // Contenido desplazable centrado
           Center(
             child: SingleChildScrollView(
               child: Card(
@@ -140,7 +65,7 @@ class _CrearRallyScreenState extends State<CrearRallyScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Título
+                        // Título de la pantalla
                         Text(
                           'Crear nuevo rally',
                           style: TextStyle(
@@ -153,7 +78,13 @@ class _CrearRallyScreenState extends State<CrearRallyScreen> {
                         // Selector de foto
                         GestureDetector(
                           onTap: () async {
-                            await _pickImage();
+                            // Abre la galería para seleccionar una imagen
+                            final file = await RallyService.pickImage(context);
+                            if (file != null) {
+                              setState(() {
+                                _fotoFile = file;
+                              });
+                            }
                           },
                           child: _fotoFile != null
                               ? ClipRRect(
@@ -176,7 +107,7 @@ class _CrearRallyScreenState extends State<CrearRallyScreen> {
                                 ),
                         ),
                         const SizedBox(height: 20),
-                        // Campo de nombre del rally
+                        // Campo para el nombre del rally
                         Padding(
                           padding: EdgeInsets.only(top: 20),
                           child: TextFormField(
@@ -197,6 +128,7 @@ class _CrearRallyScreenState extends State<CrearRallyScreen> {
                               : 'Fecha de fin: ${_fechaFin!.day}/${_fechaFin!.month}/${_fechaFin!.year}'),
                           trailing: const Icon(Icons.calendar_today),
                           onTap: () async {
+                            // Abre un selector de fecha
                             final now = DateTime.now();
                             final picked = await showDatePicker(
                               context: context,
@@ -210,12 +142,13 @@ class _CrearRallyScreenState extends State<CrearRallyScreen> {
                             });
                           },
                         ),
+                        // Espacio para mensaje de error en la fecha (si aplica)
                         if (_fechaFinError)
                           const Padding(
                             padding: EdgeInsets.only(top: 4),
                           ),
                         const SizedBox(height: 32),
-                        // Botón guardar
+                        // Botón para guardar el rally
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
@@ -230,11 +163,18 @@ class _CrearRallyScreenState extends State<CrearRallyScreen> {
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
-                            onPressed: _saving ? null : _guardarRally,
+                            onPressed: _saving
+                                ? null
+                                : () async {
+                                    // Guarda el rally usando RallyService
+                                    setState(() => _saving = true);
+                                    await RallyService.saveRally(context, _formKey, _nombreController, _fechaFin, _fotoFile);
+                                    setState(() => _saving = false);
+                                  },
                           ),
                         ),
                         const SizedBox(height: 12),
-                        // Botón cancelar
+                        // Botón para cancelar y volver atrás
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton.icon(
@@ -262,3 +202,10 @@ class _CrearRallyScreenState extends State<CrearRallyScreen> {
     );
   }
 }
+
+// Comentario: CrearRallyScreen permite a los administradores crear un nuevo rally.
+// - Incluye un formulario para ingresar el nombre, seleccionar una foto y elegir una fecha de fin.
+// - Usa RallyService para seleccionar la imagen y guardar los datos en Firestore.
+// - Valida que el nombre no esté vacío y muestra un indicador de carga durante el guardado.
+// - Si no se selecciona una fecha, RallyService asigna un día después de hoy por defecto.
+// - Permite cancelar la operación, volviendo a la pantalla anterior sin guardar.

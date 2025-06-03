@@ -35,7 +35,7 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _passwordError;
   String? _confirmPasswordError;
 
-  // Valida el formato del email
+  // Valida el formato del email.
   bool _isValidEmail(String email) {
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     return emailRegex.hasMatch(email);
@@ -57,29 +57,7 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       // Ejecuta el método de autenticación (login, registro o Google).
       await authMethod();
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
-      final email = user.email;
-      if (email == null) return;
-      // Obtiene los datos del usuario desde Firestore.
-      final userData = await UserService.getUserData(email);
-      // Comprueba si necesita completar información extra.
-      final needsExtra = UserService.needsExtraInfo(userData);
-      if (needsExtra) {
-        // Si es Google, pasa foto y nombre de Google.
-        final googlePhoto = isGoogle ? user.photoURL : null;
-        final googleName = isGoogle ? user.displayName : null;
-        // Navega al flujo de información extra.
-        final completed = await Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => ExtraInfoFlow(user: user, googlePhotoUrl: googlePhoto, googleDisplayName: googleName),
-          ),
-        );
-        // Si no completa la info, cierra sesión.
-        if (completed != true) {
-          await FirebaseAuth.instance.signOut();
-        }
-      }
+      // El flujo de datos extra se maneja en AuthGate, no aquí.
     } catch (e) {
       // Muestra error en un SnackBar si ocurre algún problema.
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ' + e.toString())));

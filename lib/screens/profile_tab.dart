@@ -1,3 +1,10 @@
+/**
+ * Pantalla de perfil de usuario.
+ * Permite ver y editar el perfil, cambiar contraseña, borrar cuenta y cerrar sesión.
+ * 
+ * @author Alberto Cárdeno Domínguez
+ */
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
@@ -14,6 +21,7 @@ class ProfileTab extends StatefulWidget {
 }
 
 class _ProfileTabState extends State<ProfileTab> {
+  // Variables de estado para los datos del usuario
   String? _fotoUrl;
   String? _username;
   String? _email;
@@ -33,6 +41,8 @@ class _ProfileTabState extends State<ProfileTab> {
     }
   }
 
+  /// Carga los datos del usuario desde Firestore usando UserService.
+  /// @author Alberto Cárdeno Domínguez
   Future<void> _loadUser() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -47,38 +57,24 @@ class _ProfileTabState extends State<ProfileTab> {
     });
   }
 
+  /// Permite seleccionar y subir una nueva foto de perfil usando UserService.
+  /// @author Alberto Cárdeno Domínguez
   Future<void> _pickAndUploadPhoto() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
-    if (picked != null) {
-      String? oldUrl = _fotoUrl;
-      // Sube la nueva foto
-      final ref = FirebaseStorage.instance
-          .ref()
-          .child('users/${user.uid}_${DateTime.now().millisecondsSinceEpoch}_${picked.name}');
-      await ref.putFile(File(picked.path));
-      final url = await ref.getDownloadURL();
-      // Borra la anterior si existe y es de Storage
-      if (oldUrl != null && oldUrl.isNotEmpty) {
-        try {
-          await FirebaseStorage.instance.refFromURL(oldUrl).delete();
-        } catch (_) {}
-      }
-      // Actualiza en Firestore
-      await FirebaseFirestore.instance.collection('usuarios').doc(user.email).update({'foto': url});
+    await UserService.pickAndUploadPhoto(context, _fotoUrl, (url) {
       setState(() {
         _fotoUrl = url;
       });
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Foto actualizada')));
-    }
+    });
   }
 
+  /// Habilita la edición del nombre de usuario.
+  /// @author Alberto Cárdeno Domínguez
   Future<void> _editUsername() async {
     setState(() => _editingUsername = true);
   }
 
+  /// Guarda el nuevo nombre de usuario usando UserService.
+  /// @author Alberto Cárdeno Domínguez
   Future<void> _saveUsername() async {
     final newUsername = _usernameController.text.trim();
     if (newUsername.isEmpty) return;
@@ -86,25 +82,26 @@ class _ProfileTabState extends State<ProfileTab> {
       setState(() => _editingUsername = false);
       return;
     }
-    final exists = await UserService.usernameExists(newUsername);
-    if (exists) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ese nombre de usuario ya existe')),
-      );
-      return;
-    }
-    await FirebaseFirestore.instance.collection('usuarios').doc(_email).update({'username': newUsername});
-    setState(() {
-      _username = newUsername;
-      _editingUsername = false;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nombre de usuario actualizado')));
+    await UserService.saveUsername(
+      context,
+      newUsername,
+      _username,
+      _email,
+      (updatedUsername, editing) {
+        setState(() {
+          _username = updatedUsername;
+          _editingUsername = editing;
+        });
+      },
+    );
   }
 
   // Añade variables para mostrar errores en los campos de contraseña
   String? _passwordError;
   String? _repeatPasswordError;
 
+  /// Muestra un diálogo para cambiar la contraseña del usuario autenticado.
+  /// @author Alberto Cárdeno Domínguez
   Future<void> _changePasswordDialog() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -209,6 +206,8 @@ class _ProfileTabState extends State<ProfileTab> {
     );
   }
 
+  /// Elimina la cuenta del usuario y todos sus datos asociados usando UserService.
+  /// @author Alberto Cárdeno Domínguez
   Future<void> _deleteAccount() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -245,6 +244,7 @@ class _ProfileTabState extends State<ProfileTab> {
       backgroundColor: Colors.deepPurple.shade50,
       body: Stack(
         children: [
+          // Fondo decorativo
           Positioned.fill(
             child: Image.asset(
               'lib/assets/Background.png',
@@ -257,6 +257,7 @@ class _ProfileTabState extends State<ProfileTab> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const SizedBox(height: 24),
+                  // Avatar de usuario con opción de editar
                   Stack(
                     children: [
                       _fotoUrl != null && _fotoUrl!.isNotEmpty
@@ -342,7 +343,7 @@ class _ProfileTabState extends State<ProfileTab> {
                             ],
                           ),
                           const SizedBox(height: 24),
-                          // Cambiar contraseña
+                          // Cambiar contraseña (solo si es usuario email/password)
                           if (_isEmailPasswordUser)
                             SizedBox(
                               width: double.infinity,
@@ -350,7 +351,7 @@ class _ProfileTabState extends State<ProfileTab> {
                                 icon: const Icon(Icons.lock, color: Colors.deepPurple),
                                 label: const Text('Cambiar contraseña'),
                                 style: OutlinedButton.styleFrom(
-                                  side: const BorderSide(color: Colors.deepPurple, width: 2), // borde más gordo
+                                  side: const BorderSide(color: Colors.deepPurple, width: 2),
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                   padding: const EdgeInsets.symmetric(vertical: 14),
                                 ),
@@ -365,7 +366,7 @@ class _ProfileTabState extends State<ProfileTab> {
                               icon: const Icon(Icons.delete, color: Colors.red),
                               label: const Text('Borrar cuenta', style: TextStyle(color: Colors.red)),
                               style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: Colors.red, width: 2), // borde más gordo
+                                side: const BorderSide(color: Colors.red, width: 2),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                               ),
@@ -380,7 +381,7 @@ class _ProfileTabState extends State<ProfileTab> {
                               icon: const Icon(Icons.logout, color: Colors.deepPurple),
                               label: const Text('Cerrar sesión', style: TextStyle(color: Colors.deepPurple)),
                               style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: Colors.deepPurple, width: 2), // borde más gordo
+                                side: const BorderSide(color: Colors.deepPurple, width: 2),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                               ),
@@ -402,3 +403,10 @@ class _ProfileTabState extends State<ProfileTab> {
     );
   }
 }
+
+// Comentario: ProfileTab permite al usuario gestionar su perfil.
+// - Muestra el avatar, username y opciones de edición.
+// - Permite cambiar la foto de perfil y el nombre de usuario usando UserService.
+// - Permite cambiar la contraseña si es usuario email/password.
+// - Permite borrar la cuenta y cerrar sesión.
+// - Incluye fondo decorativo y diseño responsive.

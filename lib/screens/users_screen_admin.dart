@@ -6,6 +6,7 @@
  * 
  * @author Alberto Cárdeno Domínguez
  */
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -23,7 +24,6 @@ class UsersAdminTab extends StatefulWidget {
 class _UsersAdminTabState extends State<UsersAdminTab> {
   // Texto de búsqueda
   String _search = '';
-
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +44,7 @@ class _UsersAdminTabState extends State<UsersAdminTab> {
             children: [
               // Buscador con icono de lupa.
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 40, 16, 8),
+                padding: const EdgeInsets.fromLTRB(16, 60, 16, 8),
                 child: TextField(
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.search),
@@ -243,3 +243,10 @@ class _UsersAdminTabState extends State<UsersAdminTab> {
     );
   }
 }
+
+// Comentario: UsersAdminTab permite a los administradores gestionar usuarios.
+// - Muestra todos los usuarios no administradores en una lista con buscador.
+// - Permite buscar por nombre, usuario o email en tiempo real.
+// - Permite bloquear o desbloquear usuarios con confirmación y feedback visual.
+// - Muestra un icono y texto si el usuario está bloqueado.
+// - Incluye fondo decorativo y diseño responsive.

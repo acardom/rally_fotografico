@@ -2,45 +2,14 @@
  * Pantalla mostrada cuando el usuario está bloqueado.
  * Permite cerrar sesión o eliminar la cuenta completamente (de Auth y Firestore).
  * Incluye fondo personalizado y botones de acción.
- * 
  * @author Alberto Cárdeno Domínguez
  */
 
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/user_service.dart';
 
 class BlockedScreen extends StatelessWidget {
   const BlockedScreen({super.key});
-
-  /// Elimina la cuenta del usuario de Firestore y Auth, y cierra sesión.
-  Future<void> _deleteAccount(BuildContext context) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-    final email = user.email;
-    try {
-      // Elimina de Firestore
-      if (email != null) {
-        await FirebaseFirestore.instance.collection('usuarios').doc(email).delete();
-      }
-      // Elimina de Auth
-      await user.delete();
-      // Cierra sesión
-      await FirebaseAuth.instance.signOut();
-      // Vuelve al inicio
-      Navigator.of(context).popUntil((route) => route.isFirst);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al eliminar la cuenta: $e')),
-      );
-    }
-  }
-
-  /// Cierra la sesión del usuario y vuelve al inicio.
-  Future<void> _signOut(BuildContext context) async {
-    await FirebaseAuth.instance.signOut();
-    Navigator.of(context).popUntil((route) => route.isFirst);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,6 +24,7 @@ class BlockedScreen extends StatelessWidget {
               fit: BoxFit.cover,
             ),
           ),
+          // Contenido centrado
           Center(
             child: Card(
               elevation: 8,
@@ -65,8 +35,10 @@ class BlockedScreen extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // Icono de bloqueo
                     Icon(Icons.block, size: 64, color: Colors.red),
                     const SizedBox(height: 16),
+                    // Título indicando el estado de bloqueo
                     const Text(
                       'Fuiste bloqueado',
                       style: TextStyle(
@@ -76,12 +48,14 @@ class BlockedScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
+                    // Mensaje explicativo
                     const Text(
                       'No puedes acceder a la aplicación.',
                       style: TextStyle(fontSize: 16, color: Colors.black87),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 32),
+                    // Botones de acción
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -92,17 +66,17 @@ class BlockedScreen extends StatelessWidget {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.deepPurple,
                           ),
-                          onPressed: () => _signOut(context),
+                          onPressed: () => UserService.signOut(context),
                         ),
-                        const SizedBox(width: 16),
-                        // Botón para eliminar cuenta
+                        const SizedBox(width: 14),
+                        // Botón para eliminar la cuenta
                         ElevatedButton.icon(
                           icon: const Icon(Icons.delete, color: Colors.white),
                           label: const Text('Eliminar cuenta', style: TextStyle(color: Colors.white)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.red,
                           ),
-                          onPressed: () => _deleteAccount(context),
+                          onPressed: () => UserService.deleteAccountAndSignOut(context),
                         ),
                       ],
                     ),
@@ -116,3 +90,9 @@ class BlockedScreen extends StatelessWidget {
     );
   }
 }
+
+// Comentario: BlockedScreen se muestra cuando un usuario está bloqueado.
+// - Presenta un mensaje claro indicando que el acceso está restringido.
+// - Incluye un fondo decorativo y una tarjeta centrada con un icono de bloqueo.
+// - Ofrece dos opciones: cerrar sesión (usando UserService.signOut) o eliminar la cuenta completamente (usando UserService.deleteAccountAndSignOut).
+// - No permite otras acciones, limitando la interacción del usuario bloqueado.

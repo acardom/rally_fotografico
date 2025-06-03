@@ -1,11 +1,12 @@
 /**
  * Servicio de autenticación con Firebase Auth y Google Sign-In.
  * Proporciona funciones para login, registro y autenticación con Google.
- * @author Alberto Cárdeno
+ * @author Alberto Cárdeno Domínguez
  */
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'user_service.dart';
 
 /// Clase estática para gestionar la autenticación de usuarios
 class AuthService {
@@ -31,6 +32,15 @@ class AuthService {
     // Llama a Firebase para crear un nuevo usuario
     // Comentario: register crea un nuevo usuario con email y contraseña.
     await FirebaseAuth.instance.createUserWithEmailAndPassword(email: email, password: password);
+    UserService.saveUserData(
+      uid: FirebaseAuth.instance.currentUser!.uid,
+      email: email,
+      nombre: '',
+      username: '',
+      fechaNacimiento: DateTime.now(),
+      esAdmin: false,
+      areBaned: false,
+    );
   }
 
   /**
