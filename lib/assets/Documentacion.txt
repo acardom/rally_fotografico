@@ -1,0 +1,679 @@
+PORTADA
+-------
+Proyecto Integrado DAW/DAM
+Título: Rally Fotográfico
+Autor: [Tu Nombre]
+Fecha: [Fecha de entrega]
+Versión: 1.0
+
+LISTA DE CAMBIOS
+----------------
+| Versión | Fecha       | Autor      | Descripción de Cambios                  |
+|---------|-------------|------------|-----------------------------------------|
+| 1.0     | [Fecha]     | [Tu Nombre]| Creación inicial del documento          |
+|         |             |            |                                         |
+
+ÍNDICE
+------
+1. Introducción
+2. Estudio de Viabilidad
+   2.1 Descripción del Sistema Actual
+   2.2 Descripción del Sistema Nuevo
+   2.3 Identificación de Requisitos del Sistema
+       2.3.1 Requisitos de información
+       2.3.2 Requisitos funcionales
+       2.3.3 Otros Requisitos
+   2.4 Descripción de la solución
+   2.5 Planificación del proyecto
+       2.5.1 Equipo de trabajo
+       2.5.2 Planificación temporal
+   2.6 Estudio del coste del proyecto
+3. Análisis del Sistema de Información
+   3.1 Identificación del entorno tecnológico
+   3.2 Modelado de datos
+       3.2.1 Modelo Entidad-Relación
+       3.2.2 Esquema de la base de datos
+       3.2.3 Datos de prueba
+   3.3 Identificación de los usuarios participantes y finales
+   3.4 Identificación de subsistemas de análisis
+   3.5 Establecimiento de requisitos
+   3.6 Diagramas de Análisis
+   3.7 Definición de interfaces de usuario
+       3.7.1 Especificación de principios generales de interfaz
+       3.7.2 Especificación de formatos individuales de la interfaz de pantalla
+       3.7.3 Identificación de perfiles de usuario
+       3.7.4 Especificación de formatos de impresión
+       3.7.5 Especificación de la navegabilidad entre pantallas
+4. Construcción del Sistema
+5. Conclusiones
+6. Glosario de términos
+7. Bibliografía
+APÉNDICES
+
+1. INTRODUCCIÓN
+---------------
+El proyecto "Rally Fotográfico" consiste en el desarrollo de una aplicación móvil multiplataforma que permite organizar, gestionar y participar en rallies fotográficos. Los usuarios pueden inscribirse en eventos, recibir pistas, subir fotografías y recibir puntuaciones por parte de un jurado. El objetivo es fomentar la creatividad y el trabajo en equipo a través de la fotografía y la tecnología móvil.
+
+La aplicación está dirigida tanto a organizadores de eventos como a participantes y jueces, facilitando la gestión integral del rally desde la inscripción hasta la evaluación de las fotografías.
+
+2. ESTUDIO DE VIABILIDAD
+------------------------
+
+2.1 DESCRIPCIÓN DEL SISTEMA ACTUAL
+Actualmente, la organización de rallies fotográficos se realiza de forma manual, utilizando herramientas como hojas de cálculo, correo electrónico y redes sociales para la comunicación y gestión de inscripciones, envío de pistas y recepción de fotografías. Este proceso es ineficiente, propenso a errores y no escalable.
+
+2.2 DESCRIPCIÓN DEL SISTEMA NUEVO
+El nuevo sistema automatiza y digitaliza todo el proceso mediante una aplicación móvil y un panel web de administración. Los organizadores pueden crear eventos, gestionar inscripciones y evaluar fotografías. Los participantes reciben pistas, suben sus fotos y consultan resultados en tiempo real. El sistema almacena toda la información en una base de datos centralizada y segura.
+
+2.3 IDENTIFICACIÓN DE REQUISITOS DEL SISTEMA
+
+2.3.1 REQUISITOS DE INFORMACIÓN
+
+- Usuarios
+  - Descripción: Información de los usuarios registrados (participantes, organizadores, jueces).
+  - Campos:
+    - id_usuario (obligatorio, int)
+    - nombre (obligatorio, string)
+    - email (obligatorio, string)
+    - contraseña (obligatorio, string)
+    - rol (obligatorio, enum: participante/organizador/juez)
+    - fecha_registro (obligatorio, datetime)
+  - Volumen estimado: 1000 usuarios/año
+  - Observaciones: El email debe ser único.
+
+- Eventos
+  - Descripción: Información de los rallies fotográficos organizados.
+  - Campos:
+    - id_evento (obligatorio, int)
+    - nombre_evento (obligatorio, string)
+    - fecha_inicio (obligatorio, date)
+    - fecha_fin (obligatorio, date)
+    - ubicación (obligatorio, string)
+    - descripción (opcional, string)
+    - estado (obligatorio, enum: abierto/cerrado/finalizado)
+  - Volumen estimado: 50 eventos/año
+
+- Fotografías
+  - Descripción: Fotografías subidas por los participantes.
+  - Campos:
+    - id_foto (obligatorio, int)
+    - id_usuario (obligatorio, int)
+    - id_evento (obligatorio, int)
+    - url_foto (obligatorio, string)
+    - fecha_subida (obligatorio, datetime)
+    - puntuación (opcional, float)
+  - Volumen estimado: 5000 fotos/año
+
+- Pistas
+  - Descripción: Pistas o retos asociados a cada evento.
+  - Campos:
+    - id_pista (obligatorio, int)
+    - id_evento (obligatorio, int)
+    - descripción (obligatorio, string)
+    - orden (obligatorio, int)
+  - Volumen estimado: 500 pistas/año
+
+2.3.2 REQUISITOS FUNCIONALES
+
+- Registro y autenticación de usuarios: Permitir el registro y acceso seguro.
+- Creación y gestión de eventos: Los organizadores pueden crear, editar y eliminar eventos.
+- Inscripción a eventos: Los usuarios pueden inscribirse en eventos abiertos.
+- Envío de pistas: Los organizadores pueden enviar pistas a los participantes.
+- Subida de fotografías: Los participantes pueden subir fotos asociadas a pistas.
+- Evaluación de fotografías: Los jueces pueden puntuar las fotos.
+- Visualización de resultados: Los participantes pueden consultar sus puntuaciones y clasificaciones.
+- Notificaciones: El sistema envía notificaciones sobre cambios y resultados.
+
+2.3.3 OTROS REQUISITOS
+
+- Seguridad: Protección de datos personales y autenticación robusta.
+- Escalabilidad: Capacidad para soportar múltiples eventos y usuarios simultáneamente.
+- Usabilidad: Interfaz intuitiva y accesible.
+- Multiplataforma: Compatible con Android e iOS.
+
+2.4 DESCRIPCIÓN DE LA SOLUCIÓN
+El sistema se compone de una aplicación móvil desarrollada en Flutter y un backend en Node.js con base de datos PostgreSQL. El backend expone una API RESTful segura. El almacenamiento de imágenes se realiza en un servicio cloud (ej. AWS S3). El panel de administración es una aplicación web desarrollada en React.
+
+2.5 PLANIFICACIÓN DEL PROYECTO
+
+2.5.1 EQUIPO DE TRABAJO
+- [Tu Nombre]: Desarrollador principal, responsable de frontend y backend.
+- [Colaboradores]: (si aplica) roles y responsabilidades.
+
+2.5.2 PLANIFICACIÓN TEMPORAL
+| Fase                  | Fecha Inicio | Fecha Fin   | Responsable    |
+|-----------------------|--------------|-------------|---------------|
+| Análisis              | 01/03/2024   | 10/03/2024  | [Tu Nombre]   |
+| Diseño                | 11/03/2024   | 20/03/2024  | [Tu Nombre]   |
+| Implementación        | 21/03/2024   | 20/04/2024  | [Tu Nombre]   |
+| Pruebas               | 21/04/2024   | 30/04/2024  | [Tu Nombre]   |
+| Documentación         | 01/05/2024   | 10/05/2024  | [Tu Nombre]   |
+| Presentación          | 15/05/2024   | 15/05/2024  | [Tu Nombre]   |
+
+2.6 ESTUDIO DEL COSTE DEL PROYECTO
+- Horas estimadas: 200
+- Coste de herramientas: 0€ (software libre)
+- Coste de infraestructura: 10€/mes (hosting cloud)
+- Coste total estimado: 100€
+
+3. ANÁLISIS DEL SISTEMA DE INFORMACIÓN
+--------------------------------------
+
+3.1 IDENTIFICACIÓN DEL ENTORNO TECNOLÓGICO
+- Desarrollo: Flutter (Dart), Node.js, React, PostgreSQL, AWS S3, GitHub.
+- Explotación: Dispositivos Android/iOS, navegador web, servidores cloud.
+
+3.2 MODELADO DE DATOS
+
+3.2.1 MODELO ENTIDAD-RELACIÓN
+(Adjuntar diagrama E/R generado con herramienta CASE, ej. dbdiagram.io)
+[Ver Apéndice A: Diagrama E/R]
+
+3.2.2 ESQUEMA DE LA BASE DE DATOS
+(Adjuntar archivo SQL en apéndice)
+Tablas principales: usuarios, eventos, fotos, pistas, inscripciones, puntuaciones.
+
+3.2.3 DATOS DE PRUEBA
+(Adjuntar archivos CSV/JSON generados con Mockaroo)
+Ejemplo:
+usuarios.csv, eventos.csv, fotos.csv
+
+3.3 IDENTIFICACIÓN DE LOS USUARIOS PARTICIPANTES Y FINALES
+
+- Participante: Usuario que se inscribe y sube fotos.
+- Organizador: Usuario que crea y gestiona eventos.
+- Juez: Usuario que evalúa las fotografías.
+- Administrador: Usuario con permisos totales (opcional).
+
+3.4 IDENTIFICACIÓN DE SUBSISTEMAS DE ANÁLISIS
+
+- Subsistema de Gestión de Usuarios
+- Subsistema de Gestión de Eventos
+- Subsistema de Gestión de Fotografías
+- Subsistema de Evaluación
+- Subsistema de Notificaciones
+
+[Adjuntar diagrama de subsistemas en Apéndice B]
+
+3.5 ESTABLECIMIENTO DE REQUISITOS
+
+Para cada subsistema, se detallan los requisitos funcionales identificados:
+
+- Gestión de Usuarios: Registro, autenticación, gestión de perfiles.
+- Gestión de Eventos: Alta, modificación, baja, consulta de eventos.
+- Gestión de Fotografías: Subida, consulta, eliminación de fotos.
+- Evaluación: Asignación de jueces, puntuación de fotos, consulta de resultados.
+- Notificaciones: Envío de avisos y recordatorios.
+
+3.6 DIAGRAMAS DE ANÁLISIS
+
+- Diagrama de casos de uso (Apéndice C)
+- Diagrama de clases (Apéndice D)
+- Diagrama de estados (Apéndice E)
+- Diagrama de secuencia (Apéndice F)
+
+3.7 DEFINICIÓN DE INTERFACES DE USUARIO
+
+3.7.1 ESPECIFICACIÓN DE PRINCIPIOS GENERALES DE INTERFAZ
+- Diseño responsive, accesible y minimalista.
+- Navegación intuitiva.
+- Feedback visual inmediato.
+
+3.7.2 ESPECIFICACIÓN DE FORMATOS INDIVIDUALES DE LA INTERFAZ DE PANTALLA
+- Pantalla de inicio: Login/Registro.
+- Pantalla principal: Lista de eventos.
+- Pantalla de evento: Detalles, pistas, subida de fotos.
+- Pantalla de evaluación: Lista de fotos, formulario de puntuación.
+- Pantalla de resultados: Clasificación y puntuaciones.
+
+3.7.3 IDENTIFICACIÓN DE PERFILES DE USUARIO
+- Participante: Acceso a eventos, subida de fotos, consulta de resultados.
+- Organizador: Gestión de eventos, pistas, participantes.
+- Juez: Evaluación de fotos.
+- Administrador: Acceso total.
+
+3.7.4 ESPECIFICACIÓN DE FORMATOS DE IMPRESIÓN
+- Certificados de participación.
+- Listados de resultados.
+- Informes de evaluación.
+
+3.7.5 ESPECIFICACIÓN DE LA NAVEGABILIDAD ENTRE PANTALLAS
+(Adjuntar diagrama de navegación en Apéndice G)
+- Participante: Inicio → Eventos → Evento → Subir Foto → Resultados
+- Organizador: Inicio → Mis Eventos → Gestión de Pistas/Participantes
+- Juez: Inicio → Evaluar Fotos → Resultados
+
+4. CONSTRUCCIÓN DEL SISTEMA
+---------------------------
+El desarrollo se realiza en un repositorio privado de GitHub. Se emplea control de versiones, ramas para cada funcionalidad y revisiones de código. El despliegue se realiza en servidores cloud y se generan builds para Android e iOS.
+
+5. CONCLUSIONES
+---------------
+El proyecto "Rally Fotográfico" ha permitido digitalizar y optimizar la gestión de rallies fotográficos, facilitando la participación y evaluación. Se han superado retos técnicos como la gestión de imágenes y la autenticación segura. Quedan pendientes mejoras como la integración de pagos y la internacionalización. El aprendizaje en Flutter y Node.js ha sido significativo.
+
+6. GLOSARIO DE TÉRMINOS
+-----------------------
+- API: Interfaz de Programación de Aplicaciones.
+- CASE: Computer-Aided Software Engineering.
+- CRUD: Create, Read, Update, Delete.
+- E/R: Entidad-Relación.
+- Mockaroo: Herramienta de generación de datos de prueba.
+- S3: Servicio de almacenamiento de Amazon Web Services.
+
+7. BIBLIOGRAFÍA
+---------------
+- Documentación oficial de Flutter: https://flutter.dev/
+- Documentación oficial de Node.js: https://nodejs.org/
+- PostgreSQL: https://www.postgresql.org/
+- AWS S3: https://aws.amazon.com/s3/
+- Mockaroo: https://www.mockaroo.com/
+- [Otros recursos utilizados]
+
+APÉNDICES
+---------
+A. Diagrama E/R (adjuntar imagen generada)
+B. Diagrama de subsistemas
+C. Diagrama de casos de uso
+D. Diagrama de clases
+E. Diagrama de estados
+F. Diagrama de secuencia
+G. Diagrama de navegación
+H. Archivos SQL y datos de prueba
+I. ANÁLISIS DETALLADO DE LA CARPETA LIB (CÓDIGO FUENTE DART)
+
+APÉNDICE I: ANÁLISIS DETALLADO DE LA CARPETA LIB (CÓDIGO FUENTE DART)
+---------------------------------------------------------------------
+
+Este apéndice describe en detalle la estructura, lógica y funcionamiento de todos los archivos Dart presentes en la carpeta `lib` del proyecto "Rally Fotográfico". Se analizan los servicios, pantallas, modelos y la arquitectura general de la aplicación.
+
+I.1. ESTRUCTURA GENERAL DE LA CARPETA LIB
+-----------------------------------------
+La carpeta `lib` contiene todo el código fuente de la aplicación Flutter. Su estructura principal es:
+
+- main.dart: Punto de entrada de la aplicación.
+- firebase_options.dart: Configuración de Firebase.
+- /screens: Pantallas principales de la app (UI).
+- /services: Lógica de negocio y acceso a datos (Firestore, Storage, Auth).
+- /assets: Recursos estáticos (imágenes, documentación, etc).
+
+I.2. main.dart
+--------------
+Contiene el punto de entrada de la app y la lógica de enrutamiento principal. Inicializa Firebase y decide qué pantalla mostrar según el estado de autenticación y los datos del usuario (usuario normal, admin, bloqueado, o sin datos completos).
+
+- Usa un widget `AuthGate` que escucha los cambios de autenticación y consulta Firestore para decidir la pantalla adecuada.
+- Si el usuario está bloqueado, muestra `BlockedScreen`.
+- Si faltan datos, lanza el flujo `ExtraInfoScreen`.
+- Si es admin, muestra `HomeScreenAdmin`.
+- Si es usuario normal, muestra `HomeScreen`.
+- Si no está autenticado, muestra `LoginScreen`.
+
+I.3. firebase_options.dart
+-------------------------
+Archivo autogenerado por FlutterFire CLI. Contiene las credenciales y configuración para conectar la app con Firebase en cada plataforma soportada.
+
+I.4. /services
+--------------
+Contiene la lógica de negocio desacoplada de la interfaz. Cada servicio se encarga de una entidad o funcionalidad concreta:
+
+- **auth_service.dart**: Lógica de autenticación (email/password y Google Sign-In). Permite login, registro y login con Google. Tras registro, crea el usuario en Firestore.
+- **user_service.dart**: Gestión de usuarios en Firestore y Storage. Permite crear, consultar, editar y borrar usuarios, cambiar foto de perfil, editar username, bloquear/desbloquear usuarios y eliminar cuentas.
+- **rally_service.dart**: Gestión de rallies. Permite crear, consultar, listar y borrar rallies, subir imágenes y comprobar si un rally ha finalizado.
+- **fotos_service.dart**: Gestión de fotos subidas por los usuarios. Permite guardar, consultar, filtrar y borrar fotos, así como saber si un usuario ya ha subido foto a un rally. Al borrar una foto, elimina también los votos asociados.
+- **voto_service.dart**: Gestión de votos sobre fotos. Permite votar, consultar el voto de un usuario, calcular la media de votos y borrar todos los votos de una foto.
+
+Todos los servicios usan Firebase Firestore como base de datos y Firebase Storage para almacenar imágenes.
+
+I.5. /screens
+-------------
+Contiene los widgets de interfaz de usuario (pantallas). Cada pantalla implementa una funcionalidad o flujo de la app:
+
+- **login_screen.dart**: Pantalla de login y registro. Permite autenticación por email/contraseña y Google. Valida datos y lanza el flujo de información extra si es necesario.
+- **extra_info_flow.dart**: Flujo para completar el perfil tras el registro/login. Solicita nombre, username, fecha de nacimiento y si es admin. Valida que el username sea único.
+- **home_screen.dart**: Pantalla principal para usuarios normales. Muestra el listado de rallies, permite buscar, navegar a detalles, galería y perfil.
+- **home_screen_admin.dart**: Pantalla principal para administradores. Permite buscar, crear y borrar rallies, gestionar fotos y usuarios, y acceder al perfil.
+- **crear_rally_screen.dart**: Pantalla para crear un nuevo rally. Permite seleccionar foto, nombre y fecha de fin.
+- **rally_detail_screen.dart**: Muestra el detalle de un rally activo. Lista todas las fotos aprobadas, permite votar con estrellas y subir una foto si el usuario no ha participado.
+- **rally_finalizado_screen.dart**: Muestra los resultados de un rally finalizado, incluyendo la foto ganadora (mayor puntuación promedio), el usuario ganador y el nombre del rally.
+- **galeria_screen.dart**: Muestra la galería personal del usuario, con el estado de sus fotos (revisando, aprobado, denegado) y permite votar en fotos aprobadas.
+- **revision_fotos_screen.dart**: Pantalla para administradores donde revisan y gestionan las fotos pendientes (aceptar/denegar).
+- **users_screen_admin.dart**: Pantalla de gestión de usuarios para administradores. Permite buscar, bloquear y desbloquear usuarios.
+- **profile_tab.dart**: Pantalla de perfil de usuario. Permite ver y editar el perfil, cambiar contraseña, borrar cuenta y cerrar sesión.
+- **blocked_screen.dart**: Pantalla mostrada a usuarios bloqueados. Permite cerrar sesión o eliminar la cuenta.
+
+I.6. FLUJOS PRINCIPALES DE LA APP
+---------------------------------
+- **Autenticación**: El usuario inicia sesión o se registra. Si falta información, completa el flujo extra. Si está bloqueado, solo puede salir o eliminar la cuenta.
+- **Gestión de rallies**: Los administradores pueden crear, listar y borrar rallies. Los usuarios pueden ver rallies activos y finalizados.
+- **Participación**: Los usuarios pueden subir una foto a cada rally (si no ha finalizado y no han participado). Las fotos pasan por revisión de un admin.
+- **Votación**: Los usuarios pueden votar fotos aprobadas (1-5 estrellas). La media de votos se muestra en tiempo real.
+- **Gestión de usuarios**: Los administradores pueden buscar, bloquear y desbloquear usuarios. Los usuarios pueden editar su perfil, cambiar contraseña y borrar su cuenta.
+
+I.7. DIAGRAMAS SUGERIDOS
+------------------------
+- Diagrama de clases: Relaciona los servicios y las entidades principales (Usuario, Rally, Foto, Voto).
+- Diagrama de casos de uso: Login, registro, completar perfil, crear rally, subir foto, votar, revisar fotos, gestionar usuarios.
+- Diagrama de navegación: Flujo entre pantallas según el tipo de usuario y el estado de autenticación.
+
+I.8. EJEMPLOS DE USO DE LOS SERVICIOS
+--------------------------------------
+- Registrar usuario:
+  ```dart
+  await AuthService.register(email, password);
+  ```
+- Guardar datos de usuario:
+  ```dart
+  await UserService.saveUserData(
+    uid: user.uid,
+    email: user.email!,
+    nombre: 'Juan',
+    username: 'juanito',
+    fechaNacimiento: DateTime(2000, 1, 1),
+    esAdmin: false,
+    areBaned: false,
+  );
+  ```
+- Crear rally:
+  ```dart
+  await RallyService.saveRallyData(
+    nombre: 'Rally Primavera',
+    uid: adminUid,
+    fechaFin: DateTime(2024, 6, 30),
+    foto: urlFoto,
+  );
+  ```
+- Subir foto:
+  ```dart
+  await FotosService.saveFotoData(
+    rid: rallyId,
+    uid: user.uid,
+    estado: 'revisando',
+    foto: urlFoto,
+    username: user.username,
+  );
+  ```
+- Votar foto:
+  ```dart
+  await VotosService.saveOrUpdateVoto(
+    fid: fotoId,
+    uid: user.uid,
+    puntuacion: 5,
+  );
+  ```
+
+I.9. SEGURIDAD Y VALIDACIONES
+-----------------------------
+- Todas las operaciones de escritura y borrado requieren autenticación.
+- Los administradores tienen permisos adicionales para crear/borrar rallies y gestionar usuarios.
+- Los usuarios no pueden votar sus propias fotos ni subir más de una foto por rally.
+- El sistema valida que los usernames sean únicos y que los datos obligatorios estén completos.
+
+I.10. CONCLUSIÓN DEL ANÁLISIS DEL CÓDIGO
+----------------------------------------
+El código Dart de la carpeta `lib` está organizado en servicios reutilizables y pantallas desacopladas, siguiendo buenas prácticas de Flutter y Firebase. La lógica de negocio está centralizada en los servicios, facilitando el mantenimiento y la escalabilidad. La interfaz es intuitiva y adaptada a cada perfil de usuario. El sistema es seguro, robusto y fácilmente ampliable.
+
+I.11. DESCRIPCIÓN DETALLADA DE LOS PRINCIPALES ARCHIVOS DART
+------------------------------------------------------------
+
+A continuación se realiza un análisis exhaustivo de los archivos más relevantes de la carpeta `lib`, describiendo su estructura interna, funciones, lógica, dependencias y ejemplos de interacción entre ellos.
+
+I.11.1. main.dart
+-----------------
+- **Propósito:** Es el punto de entrada de la aplicación. Inicializa Firebase y define la lógica de navegación principal.
+- **Estructura:**
+  - Inicialización asíncrona de Firebase.
+  - Widget raíz `MyApp` que configura el tema y las rutas.
+  - Widget `AuthGate` que determina la pantalla a mostrar según el estado de autenticación y los datos del usuario.
+- **Lógica de navegación:**
+  - Si el usuario está autenticado, consulta Firestore para obtener sus datos.
+  - Si el usuario está bloqueado (`areBaned`), muestra `BlockedScreen`.
+  - Si faltan datos obligatorios, muestra el flujo `ExtraInfoScreen`.
+  - Si es admin, muestra `HomeScreenAdmin`; si no, muestra `HomeScreen`.
+  - Si no está autenticado, muestra `LoginScreen`.
+- **Dependencias:** Firebase Auth, Firestore, servicios propios, pantallas de UI.
+
+I.11.2. firebase_options.dart
+-----------------------------
+- **Propósito:** Proporciona la configuración de Firebase para cada plataforma.
+- **Generación:** Archivo autogenerado por FlutterFire CLI.
+- **Uso:** Se importa en `main.dart` para inicializar Firebase con las credenciales correctas.
+
+I.11.3. services/auth_service.dart
+----------------------------------
+- **Propósito:** Centraliza la lógica de autenticación.
+- **Funciones principales:**
+  - `login(email, password)`: Inicia sesión con email y contraseña.
+  - `register(email, password)`: Registra un nuevo usuario y crea su documento en Firestore.
+  - `signInWithGoogle()`: Autenticación con Google y registro en Firebase Auth.
+- **Notas:** Tras el registro, se crea el usuario en la colección `usuarios` de Firestore.
+
+I.11.4. services/user_service.dart
+----------------------------------
+- **Propósito:** Gestiona la información de los usuarios en Firestore y Storage.
+- **Funciones principales:**
+  - `userExists(email)`, `usernameExists(username)`: Validaciones de unicidad.
+  - `saveUserData(...)`: Guarda o actualiza los datos del usuario.
+  - `getUserData(email)`, `getUserDataByUid(uid)`: Obtiene datos del usuario.
+  - `pickAndUploadPhoto(...)`: Permite seleccionar y subir una foto de perfil.
+  - `editUsername(...)`, `saveUsername(...)`: Edición y validación del nombre de usuario.
+  - `confirmAndDeleteAccount(...)`, `deleteAccount(...)`: Elimina la cuenta y todos los datos asociados.
+  - `setBanStatus(email, ban)`: Bloquea o desbloquea un usuario.
+  - `signOut(context)`: Cierra sesión.
+- **Notas:** Gestiona la eliminación de fotos de perfil antiguas y la eliminación en cascada de fotos y votos al borrar un usuario.
+
+I.11.5. services/rally_service.dart
+-----------------------------------
+- **Propósito:** Gestiona la entidad Rally (evento fotográfico).
+- **Funciones principales:**
+  - `saveRallyData(...)`: Crea un nuevo rally en Firestore.
+  - `getRallyData(rallyId)`: Obtiene los datos de un rally.
+  - `getAllRallies()`: Lista todos los rallies.
+  - `deleteRally(rallyId)`: Borra un rally y todas las fotos/votos asociados.
+  - `pickImage(context)`, `uploadImage(context, image)`: Selección y subida de imagen de rally.
+  - `rallyFinished(rally)`: Comprueba si el rally ha finalizado.
+- **Notas:** Al borrar un rally, elimina también las fotos y votos asociados.
+
+I.11.6. services/fotos_service.dart
+-----------------------------------
+- **Propósito:** Gestiona las fotos subidas por los usuarios.
+- **Funciones principales:**
+  - `saveFotoData(...)`: Guarda una foto en Firestore.
+  - `getFotoData(fotoId)`: Obtiene los datos de una foto.
+  - `userHasFotoInRally(rid, uid)`: Comprueba si un usuario ya ha subido foto a un rally.
+  - `getFotosByRally(rid)`, `getFotosByUser(uid)`, `getFotosByEstado(estado)`: Listados filtrados.
+  - `deleteFoto(fotoId)`: Borra una foto y sus votos asociados.
+- **Notas:** Elimina la imagen de Storage y los votos al borrar una foto.
+
+I.11.7. services/voto_service.dart
+----------------------------------
+- **Propósito:** Gestiona los votos sobre las fotos.
+- **Funciones principales:**
+  - `saveOrUpdateVoto(fid, uid, puntuacion)`: Guarda o actualiza el voto de un usuario para una foto.
+  - `votePhoto(context, fotoId, stars)`: Permite votar una foto desde la UI.
+  - `getUserVoto(fid, uid)`: Obtiene el voto de un usuario para una foto.
+  - `getAveragePuntuacion(fid)`: Calcula la media de votos de una foto.
+  - `deleteVotosByFotoId(fid)`: Borra todos los votos de una foto.
+- **Notas:** Permite que cada usuario vote una sola vez por foto.
+
+I.11.8. screens/login_screen.dart
+---------------------------------
+- **Propósito:** Pantalla de login y registro.
+- **Características:**
+  - Permite alternar entre login y registro.
+  - Valida email y contraseña.
+  - Permite autenticación con Google.
+  - Lanza el flujo de información extra si falta completar el perfil.
+- **Notas:** Usa `AuthService` y `UserService` para la lógica de autenticación y registro.
+
+I.11.9. screens/extra_info_flow.dart
+------------------------------------
+- **Propósito:** Flujo para completar el perfil tras el registro/login.
+- **Características:**
+  - Solicita nombre, username (único), fecha de nacimiento y si es admin.
+  - Valida la unicidad del username.
+  - Guarda los datos en Firestore.
+- **Notas:** Es obligatorio completar este flujo para acceder a la app.
+
+I.11.10. screens/home_screen.dart y home_screen_admin.dart
+----------------------------------------------------------
+- **Propósito:** Pantallas principales para usuarios normales y administradores.
+- **Características comunes:**
+  - Listado de rallies con buscador.
+  - Navegación a detalles de rally, galería y perfil.
+- **home_screen_admin.dart:**
+  - Permite crear y borrar rallies.
+  - Acceso a gestión de fotos y usuarios.
+- **Notas:** El acceso a cada pantalla depende del rol del usuario.
+
+I.11.11. screens/crear_rally_screen.dart
+----------------------------------------
+- **Propósito:** Permite a los administradores crear un nuevo rally.
+- **Características:**
+  - Formulario para nombre, foto y fecha de fin.
+  - Validación de campos.
+  - Subida de imagen a Storage.
+- **Notas:** Usa `RallyService` para la lógica de guardado.
+
+I.11.12. screens/rally_detail_screen.dart
+-----------------------------------------
+- **Propósito:** Muestra el detalle de un rally activo.
+- **Características:**
+  - Lista todas las fotos aprobadas del rally.
+  - Permite votar con estrellas.
+  - Permite subir una foto si el usuario no ha participado.
+  - Incluye buscador por username.
+- **Notas:** Usa `FotosService`, `UserService` y `VotosService`.
+
+I.11.13. screens/rally_finalizado_screen.dart
+---------------------------------------------
+- **Propósito:** Muestra los resultados de un rally finalizado.
+- **Características:**
+  - Muestra la foto ganadora (mayor puntuación promedio).
+  - Muestra el usuario ganador y la puntuación.
+  - Incluye botón de retroceso y fondo decorativo.
+- **Notas:** Usa `FotosService` y `VotosService` para calcular la ganadora.
+
+I.11.14. screens/galeria_screen.dart
+------------------------------------
+- **Propósito:** Muestra la galería personal del usuario.
+- **Características:**
+  - Lista todas las fotos subidas por el usuario.
+  - Muestra el estado de cada foto (revisando, aprobado, denegado).
+  - Permite votar en fotos aprobadas.
+  - Permite ver la foto ampliada y el nombre del rally asociado.
+- **Notas:** Usa `FotosService` y `VotosService`.
+
+I.11.15. screens/revision_fotos_screen.dart
+-------------------------------------------
+- **Propósito:** Permite a los administradores revisar y gestionar fotos pendientes.
+- **Características:**
+  - Lista todas las fotos en estado "revisando".
+  - Permite aprobar o denegar cada foto.
+  - Muestra la imagen ampliada al pulsar.
+- **Notas:** Usa `FotosService` y Firestore directamente para actualizar el estado.
+
+I.11.16. screens/users_screen_admin.dart
+----------------------------------------
+- **Propósito:** Gestión de usuarios para administradores.
+- **Características:**
+  - Buscador por nombre, username o email.
+  - Permite bloquear o desbloquear usuarios.
+  - Muestra iconos y distintivos visuales para usuarios bloqueados.
+- **Notas:** Usa `UserService` para la lógica de bloqueo/desbloqueo.
+
+I.11.17. screens/profile_tab.dart
+---------------------------------
+- **Propósito:** Pantalla de perfil de usuario.
+- **Características:**
+  - Permite ver y editar el perfil.
+  - Cambiar foto de perfil y nombre de usuario.
+  - Cambiar contraseña (si es usuario email/password).
+  - Borrar cuenta y cerrar sesión.
+- **Notas:** Usa `UserService` para todas las operaciones.
+
+I.11.18. screens/blocked_screen.dart
+------------------------------------
+- **Propósito:** Pantalla mostrada a usuarios bloqueados.
+- **Características:**
+  - Muestra mensaje de bloqueo.
+  - Permite cerrar sesión o eliminar la cuenta.
+- **Notas:** No permite ninguna otra acción.
+
+I.12. EJEMPLOS DE FLUJOS DE USUARIO
+-----------------------------------
+- **Registro y primer acceso:**
+  1. El usuario se registra con email/contraseña o Google.
+  2. Si falta información, completa el flujo extra (nombre, username, fecha).
+  3. Accede a la pantalla principal según su rol.
+- **Participación en un rally:**
+  1. El usuario selecciona un rally activo.
+  2. Si no ha subido foto, puede subir una.
+  3. La foto queda en estado "revisando" hasta que un admin la aprueba.
+  4. Una vez aprobada, otros usuarios pueden votar la foto.
+- **Gestión de rallies por admin:**
+  1. El admin accede a la pantalla de gestión.
+  2. Puede crear un nuevo rally, editar o borrar existentes.
+  3. Puede revisar fotos pendientes y gestionar usuarios.
+
+I.13. DISEÑO DE LA BASE DE DATOS FIRESTORE
+------------------------------------------
+- **Colección usuarios:**
+  - Campos: uid, email, nombre, username, fechaNacimiento, esAdmin, areBaned, foto.
+  - Índices: email (clave primaria), username (único).
+- **Colección Rally:**
+  - Campos: nombre, uid (creador), fechaFin, foto.
+- **Colección Fotos:**
+  - Campos: rid (id rally), uid (usuario), estado, foto (url), username.
+- **Colección Votos:**
+  - Campos: Fid (id foto), Uid (usuario), Puntuacion (int).
+- **Relaciones:**
+  - Un usuario puede tener muchas fotos.
+  - Un rally puede tener muchas fotos.
+  - Una foto puede tener muchos votos.
+
+I.14. HERRAMIENTAS CASE Y DIAGRAMAS
+-----------------------------------
+- **Herramienta CASE recomendada:** dbdiagram.io, Lucidchart, Draw.io, StarUML.
+- **Diagramas a adjuntar:**
+  - Diagrama Entidad-Relación (E/R) de Firestore.
+  - Diagrama de clases (servicios y entidades).
+  - Diagrama de casos de uso.
+  - Diagrama de navegación entre pantallas.
+  - Diagrama de estados de una foto (revisando, aprobado, denegado).
+
+I.15. PRUEBAS Y DATOS DE PRUEBA
+-------------------------------
+- **Pruebas unitarias:** Se recomienda usar el archivo `test/widget_test.dart` para pruebas de widgets.
+- **Datos de prueba:** Generar usuarios, rallies y fotos con Mockaroo o scripts propios.
+- **Validaciones:** Pruebas de registro, login, subida de fotos, votación, bloqueo/desbloqueo, borrado de cuentas y rallies.
+
+I.16. CONSIDERACIONES DE SEGURIDAD Y PRIVACIDAD
+-----------------------------------------------
+- **Autenticación:** Firebase Auth garantiza autenticación segura.
+- **Reglas de Firestore:** Limitar escritura y lectura según el rol y la autenticación.
+- **Almacenamiento de imágenes:** Solo usuarios autenticados pueden subir/borrar imágenes.
+- **Privacidad:** Los datos personales solo son accesibles por el propio usuario y los administradores.
+
+I.17. ESCALABILIDAD Y MANTENIMIENTO
+-----------------------------------
+- **Escalabilidad:** Firestore y Storage permiten escalar a miles de usuarios y fotos.
+- **Mantenimiento:** La separación en servicios y pantallas facilita la ampliación y el mantenimiento.
+- **Actualizaciones:** El documento de documentación debe actualizarse en cada nueva versión del sistema.
+
+I.18. POSIBLES MEJORAS Y FUTURO
+-------------------------------
+- **Internacionalización:** Añadir soporte multilenguaje.
+- **Notificaciones push:** Avisar a los usuarios de nuevos rallies, resultados, etc.
+- **Sistema de comentarios:** Permitir comentarios en fotos.
+- **Ranking global:** Mostrar un ranking de usuarios y rallies.
+- **Integración de pagos:** Para rallies premium o donaciones.
+
+I.19. CONCLUSIÓN FINAL
+----------------------
+El proyecto "Rally Fotográfico" es una solución integral, moderna y escalable para la gestión de eventos fotográficos. Su arquitectura modular, el uso de Firebase y Flutter, y la separación clara entre lógica de negocio y presentación, garantizan un producto robusto, seguro y fácil de mantener. La documentación aquí presentada cubre todas las fases del ciclo de vida del software, desde el análisis hasta la explotación y el mantenimiento, y sirve como base para futuras ampliaciones y mejoras.
+
+Respuesta a la consulta:
+El documento actual, con el nivel de detalle y extensión proporcionados, ocuparía aproximadamente entre 18 y 25 páginas en formato A4, usando interlineado 1.5, fuente estándar (Arial/Times 11-12), márgenes normales y sin contar los apéndices gráficos (diagramas, capturas, archivos adjuntos). Si se añaden los diagramas CASE, ejemplos de pantallas, tablas de datos de prueba y capturas de la aplicación, fácilmente puede superar las 30 páginas.
+
+La extensión final dependerá del formato de impresión, la inclusión de imágenes/diagramas y el nivel de detalle en cada apartado.
+
+...fin del documento...
